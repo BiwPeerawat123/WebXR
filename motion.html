@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>A-Frame WebXR Gesture Recognition</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #videoFeed { 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; height: 100vh; 
+            object-fit: cover; 
+            z-index: -1; 
+            /* ซ่อนวิดีโอหากต้องการแสดงเฉพาะใน A-Frame texture หรือใช้ AR Passthrough */
+        }
+    </style>
+
+    <script>
+        // --- A-Frame Component สำหรับจัดการกล้องและ ML ---
+        AFRAME.registerComponent('gesture-detector', {
+            schema: {
+                modelType: {type: 'string', default: 'posenet'}, // 'posenet' หรือ 'mediapipe'
+                debug: {type: 'boolean', default: false} // แสดงจุดโครงกระดูกเพื่อ Debug
+            },
+            init: function () {
+                console.log("Gesture Detector: Initializing...");
+                this.videoEl = null;
+                this.model = null; // โมเดล ML (PoseNet/MediaPipe)
+                this.lastPose = null; // เก็บ Pose ล่าสุด
+                this.isDetecting = false; // สถานะการตรวจจับ
+
+                // เตรียม canvas สำหรับการแสดงผล/ประมวลผล (ถ้าจำเป็น)
+                this.canvas = document.createElement('canvas');
+                this.canvasContext = this.canvas.getContext('2d');
+                if (this.data.debug) {
+                    this.canvas.style.position = 'fixed';
+                    this.canvas.style.top = '0';
+                    this.canvas.style.left = '0';
+                    this.canvas.style.zIndex = '9999';
+                    document.body.appendChild(this.canvas);
+                }
+
+                // รอ A-Frame scene พร้อมและผู้ใช้เข้าสู่โหมด XR
+                this.el.sceneEl.addEventListener('enter-vr', this.onEnterVR.bind(this));
+                this.el.sceneEl.addEventListener('exit-vr', this.onExitVR.bind(this));
+            },
+
+            onEnterVR: async function () {
+                console.log("Entered VR/AR. Attempting to access camera...");
+                try {
+                    // หากใช้ Immersive AR ของ WebXR API, A-Frame จะจัดการกล้องให้
+                    // หากไม่ใช่ ให้ลองเข้าถึง Stream ของกล้องด้วย getUserMedia
+                    
+                    // สำหรับการทดสอบบนเดสก์ท็อปหรือใน WebAR ที่ไม่ใช้ Passthrough
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    this.videoEl = document.createElement('video');
+                    this.videoEl.srcObject = stream;
+                    this.videoEl.autoplay = true;
+                    this.videoEl.playsInline = true;
+                    this.videoEl.style.display = 'none'; // ซ่อนวิดีโอ HTML
+                    document.body.appendChild(this.videoEl);
+
+                    this.videoEl.onloadedmetadata = () => {
+                        this.videoEl.play();
+                        this.canvas.width = this.videoEl.videoWidth;
+                        this.canvas.height = this.videoEl.videoHeight;
+                        this.loadModel();
+                    };
+
+                } catch (err) {
+                    console.error("Error accessing camera:", err);
+                    alert("ไม่สามารถเข้าถึงกล้องได้ ตรวจสอบสิทธิ์การเข้าถึงกล้องของคุณ");
+                }
+            },
+
+            onExitVR: function () {
+                console.log("Exited VR/AR. Stopping camera stream...");
+                if (this.videoEl && this.videoEl.srcObject) {
+                    this.videoEl.srcObject.getTracks().forEach(track => track.stop());
+                    this.videoEl.remove();
+                    this.videoEl = null;
+                }
+                this.model = null;
+                this.isDetecting = false;
+            },
+
+            loadModel: async function () {
+                console.log(`Loading ${this.data.modelType} model...`);
+                this.isDetecting = true;
+                try {
+                    if (this.data.modelType === 'posenet') {
+                        // โหลด PoseNet
+                        this.model = await posenet.load({
+                            architecture: 'MobileNetV1',
+                            outputStride: 16,
+                            inputResolution: { width: 640, height: 480 },
+                            multiplier: 0.75
+                        });
+                        console.log("PoseNet model loaded.");
+                    } 
+                    // else if (this.data.modelType === 'mediapipe') {
+                    //     // การตั้งค่า MediaPipe Pose ที่ซับซ้อนกว่า
+                    //     // Requires: new Pose({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`})
+                    //     // และการใช้ Pose.onResults และ Camera (จาก @mediapipe/camera_utils)
+                    //     // ... โค้ดสำหรับ MediaPipe ...
+                    // }
+                    this.detectPoseInVideo();
+                } catch (error) {
+                    console.error("Failed to load ML model:", error);
+                    this.isDetecting = false;
+                }
+            },
+
+            detectPoseInVideo: async function () {
+                if (!this.isDetecting || !this.model || !this.videoEl || this.videoEl.readyState !== 4) {
+                    requestAnimationFrame(this.detectPoseInVideo.bind(this));
+                    return;
+                }
+
+                if (this.data.modelType === 'posenet') {
+                    const pose = await this.model.estimateSinglePose(this.videoEl, {
+                        flipHorizontal: false,
+                        decodingMethod: 'single-person'
+                    });
+                    this.processPose(pose);
+                } 
+                // else if (this.data.modelType === 'mediapipe') {
+                //     // การใช้งาน MediaPipe.process()
+                // }
+
+                requestAnimationFrame(this.detectPoseInVideo.bind(this));
+            },
+
+            processPose: function (pose) {
+                if (!pose || !pose.keypoints) return;
+
+                this.lastPose = pose;
+
+                if (this.data.debug) {
+                    this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.canvasContext.drawImage(this.videoEl, 0, 0, this.canvas.width, this.canvas.height);
+                    drawKeypoints(pose.keypoints, this.canvasContext); // ต้องมีฟังก์ชัน drawKeypoints (ดู TensorFlow.js docs)
+                    drawSkeleton(pose.keypoints, this.canvasContext); // ต้องมีฟังก์ชัน drawSkeleton (ดู TensorFlow.js docs)
+                }
+
+                // --- ตรรกะการตรวจจับท่าทาง (Gesture Recognition Logic) ---
+                // ตัวอย่าง: ตรวจจับว่ามือซ้ายยกขึ้นสูงกว่าไหล่หรือไม่
+                const leftShoulder = pose.keypoints.find(kp => kp.part === 'leftShoulder');
+                const leftElbow = pose.keypoints.find(kp => kp.part === 'leftElbow');
+                const leftWrist = pose.keypoints.find(kp => kp.part === 'leftWrist');
+
+                if (leftShoulder && leftWrist && leftWrist.score > 0.7 && leftShoulder.score > 0.7) {
+                    if (leftWrist.position.y < leftShoulder.position.y - 50) { // ข้อมือซ้ายอยู่สูงกว่าไหล่ซ้าย
+                        console.log("ท่าทาง: ยกมือซ้ายขึ้น!");
+                        this.el.sceneEl.emit('leftHandUp'); // ยิงเหตุการณ์ไปให้ A-Frame scene
+                    }
+                }
+                
+                // คุณสามารถเพิ่มตรรกะสำหรับท่าทางอื่น ๆ ได้ที่นี่
+                // เช่น โบกมือ, กางแขน, ฯลฯ โดยการเปรียบเทียบตำแหน่งของจุดต่างๆ
+                // เช่น ตำแหน่งของข้อมือเทียบกับข้อศอก, หรือไหล่
+                
+                // หากต้องการส่งข้อมูล Pose ไปให้วัตถุอื่นใน A-Frame
+                this.el.sceneEl.emit('pose-update', { pose: pose });
+            }
+            // สามารถเพิ่ม removeEventListener และฟังก์ชัน helper อื่นๆ ได้
+        });
+        
+        // --- ฟังก์ชัน Helper สำหรับวาด Debug (จาก TensorFlow.js PoseNet ตัวอย่าง) ---
+        // คุณจะต้องคัดลอกและปรับแต่งฟังก์ชันเหล่านี้จากตัวอย่าง PoseNet
+        function drawKeypoints(keypoints, ctx) {
+            const minConfidence = 0.5; // ความมั่นใจขั้นต่ำในการวาดจุด
+            for (let i = 0; i < keypoints.length; i++) {
+                const keypoint = keypoints[i];
+                if (keypoint.score < minConfidence) continue;
+                const {y, x} = keypoint.position;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = 'red';
+                ctx.fill();
+            }
+        }
+        function drawSkeleton(keypoints, ctx) {
+            const adjacentKeyPoints = posenet.get
+            // ต้องนำเข้า 'posenet' ในส่วนของ script header เพื่อใช้ 'posenet.get...'
+            const minConfidence = 0.5;
+            // ... โค้ดวาดเส้นเชื่อมจากตัวอย่าง PoseNet ...
+        }
+        // ... (และอื่นๆ เช่น getAdjacentKeyPoints, drawSegment) ...
+
+    </script>
+</head>
+<body>
+    <a-scene xr-mode-ui="enabled: true" gesture-detector="debug: true; modelType: posenet">
+        <a-entity camera look-controls position="0 1.6 0"></a-entity>
+        
+        <a-box id="responseBox" position="0 1 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+
+        <a-entity id="debugText" text="value: No gesture detected; width: 2" position="0 2.5 -2.5"></a-entity>
+
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
+        <a-sky color="#ECECEC"></a-sky>
+
+        <a-light type="ambient" color="#BBB"></a-light>
+        <a-light type="directional" intensity="0.5" position="1 1 1"></a-light>
+    </a-scene>
+
+    <script>
+        // --- Logic สำหรับตอบสนองต่อเหตุการณ์ใน Scene ---
+        document.querySelector('a-scene').addEventListener('leftHandUp', function () {
+            console.log("Scene: Left hand is up!");
+            const box = document.querySelector('#responseBox');
+            box.setAttribute('color', 'red'); // เปลี่ยนสีกล่องเมื่อมือซ้ายยกขึ้น
+            document.querySelector('#debugText').setAttribute('text', 'value: Left Hand Up!');
+            
+            // เปลี่ยนกลับเป็นสีเดิมหลังจากนั้นไม่นาน
+            clearTimeout(this.resetColorTimeout);
+            this.resetColorTimeout = setTimeout(() => {
+                box.setAttribute('color', '#4CC3D9');
+                document.querySelector('#debugText').setAttribute('text', 'value: No gesture detected');
+            }, 2000);
+        });
+
+        // คุณยังสามารถใช้ 'pose-update' event เพื่อแสดงข้อมูล pose ดิบ
+        document.querySelector('a-scene').addEventListener('pose-update', function (evt) {
+            // const pose = evt.detail.pose;
+            // console.log("Current Pose:", pose);
+        });
+
+    </script>
+</body>
+</html>
