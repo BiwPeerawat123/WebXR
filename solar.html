@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0">
+  <title>ระบบสุริยะ — AR (A-Frame + AR.js)</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+  <!-- AR.js for A-Frame (ใช้ webcam / mobile camera เป็น background) -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #000; color: #fff; }
+    #hint {
+      position: absolute; left: 12px; top: 12px; z-index: 10;
+      background: rgba(0,0,0,0.5); padding: 8px 10px; border-radius: 6px;
+      font-size: 14px;
+    }
+    #controls {
+      position: absolute; right: 12px; top: 12px; z-index: 10;
+      display:flex; gap:8px;
+    }
+    button { padding:8px 12px; border-radius:6px; border: none; background:#1976d2; color:white; font-weight:600; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div id="hint">แตะยืนยันอนุญาตกล้อง → รอโหลดกล้อง แล้วแตะที่พื้น/หน้าจอเพื่อวางระบบสุริยะ</div>
+  <div id="controls">
+    <button id="placeBtn">วางระบบสุริยะ</button>
+    <button id="resetBtn">รีเซ็ตตำแหน่ง</button>
+  </div>
+
+  <!-- A-Frame scene: arjs 'sourceType: webcam' จะเปิดกล้องเป็น background -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="antialias: true; colorManagement: true">
+
+    <!-- กลุ่มระบบสุริยะ (จะถูกวางลงเมื่อต้องการ) -->
+    <a-entity id="solarRoot" visible="false" position="0 0 -2" rotation="0 0 0" scale="0.6 0.6 0.6">
+
+      <!-- แสง (แสงจากดวงอาทิตย์ + เบื้องหลัง) -->
+      <a-entity light="type: ambient; intensity: 0.25"></a-entity>
+      <a-entity light="type: point; intensity: 2.5; distance: 50" position="0 0 0"></a-entity>
+
+      <!-- SUN -->
+      <a-sphere id="sun" radius="0.35" position="0 0 0"
+                src="https://raw.githubusercontent.com/stellarium/stellarium/master/textures/sun.jpg"
+                material="emissive: #ffb74d; emissiveIntensity: 1.6; shader: standard">
+        <a-animation attribute="rotation" to="0 360 0" dur="30000" repeat="indefinite"></a-animation>
+      </a-sphere>
+
+      <!-- helper: small glow (billboard) -->
+      <a-ring radius-inner="0.5" radius-outer="0.8" position="0 0 0" rotation="-90 0 0"
+              material="shader: flat; opacity: 0.12"></a-ring>
+
+      <!-- PLANETS: ตัวอย่างแบบง่าย ใช้ texture จาก CDN -->
+      <!-- Mercury -->
+      <a-entity class="orbit" id="orbit-mercury">
+        <a-entity geometry="primitive: ring; radiusInner: 0.9; radiusOuter: 0.905" rotation="-90 0 0" material="shader: flat; opacity: 0.06"></a-entity>
+        <a-entity id="mercury-parent" animation="property: rotation; to: 0 360 0; dur: 8000; loop: true; easing: linear">
+          <a-sphere id="mercury" radius="0.04" position="0.9 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/mercury.jpg"
+                    material="shader: standard"></a-sphere>
+        </a-entity>
+      </a-entity>
+
+      <!-- Venus -->
+      <a-entity class="orbit" id="orbit-venus">
+        <a-entity geometry="primitive: ring; radiusInner: 1.2; radiusOuter: 1.205" rotation="-90 0 0" material="shader: flat; opacity: 0.05"></a-entity>
+        <a-entity id="venus-parent" animation="property: rotation; to: 0 360 0; dur: 14000; loop: true; easing: linear">
+          <a-sphere id="venus" radius="0.06" position="1.2 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/venus.jpg"
+                    material="shader: standard"></a-sphere>
+        </a-entity>
+      </a-entity>
+
+      <!-- Earth + Moon -->
+      <a-entity class="orbit" id="orbit-earth">
+        <a-entity geometry="primitive: ring; radiusInner: 1.6; radiusOuter: 1.605" rotation="-90 0 0" material="shader: flat; opacity: 0.04"></a-entity>
+        <a-entity id="earth-parent" animation="property: rotation; to: 0 360 0; dur: 22000; loop: true; easing: linear">
+          <a-sphere id="earth" radius="0.07" position="1.6 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/earth.jpg"
+                    material="shader: standard"></a-sphere>
+
+          <!-- moon orbiting earth -->
+          <a-entity id="moon-orbit" animation="property: rotation; to: 0 360 0; dur: 5000; loop: true; easing: linear" position="1.6 0 0">
+            <a-sphere id="moon" radius="0.02" position="0.2 0 0"
+                      src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/moon.jpg"
+                      material="shader: standard"></a-sphere>
+          </a-entity>
+
+        </a-entity>
+      </a-entity>
+
+      <!-- Mars -->
+      <a-entity class="orbit" id="orbit-mars">
+        <a-entity geometry="primitive: ring; radiusInner: 1.95; radiusOuter: 1.955" rotation="-90 0 0" material="shader: flat; opacity: 0.035"></a-entity>
+        <a-entity id="mars-parent" animation="property: rotation; to: 0 360 0; dur: 32000; loop: true; easing: linear">
+          <a-sphere id="mars" radius="0.05" position="1.95 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/mars.jpg"
+                    material="shader: standard"></a-sphere>
+        </a-entity>
+      </a-entity>
+
+      <!-- Jupiter -->
+      <a-entity class="orbit" id="orbit-jupiter">
+        <a-entity geometry="primitive: ring; radiusInner: 2.6; radiusOuter: 2.605" rotation="-90 0 0" material="shader: flat; opacity: 0.03"></a-entity>
+        <a-entity id="jupiter-parent" animation="property: rotation; to: 0 360 0; dur: 44000; loop: true; easing: linear">
+          <a-sphere id="jupiter" radius="0.14" position="2.6 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/jupiter.jpg"
+                    material="shader: standard"></a-sphere>
+        </a-entity>
+      </a-entity>
+
+      <!-- Saturn (with ring) -->
+      <a-entity class="orbit" id="orbit-saturn">
+        <a-entity geometry="primitive: ring; radiusInner: 3.4; radiusOuter: 3.405" rotation="-90 0 0" material="shader: flat; opacity: 0.02"></a-entity>
+        <a-entity id="saturn-parent" animation="property: rotation; to: 0 360 0; dur: 56000; loop: true; easing: linear">
+          <a-entity position="3.4 0 0">
+            <a-sphere id="saturn" radius="0.12"
+                      src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/saturn.jpg"
+                      material="shader: standard"></a-sphere>
+            <a-ring radius-inner="0.16" radius-outer="0.28" rotation="90 0 0" position="0 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/saturn-ring.png"
+                    material="shader: flat; side: double; opacity: 0.85"></a-ring>
+          </a-entity>
+        </a-entity>
+      </a-entity>
+
+      <!-- Uranus -->
+      <a-entity class="orbit" id="orbit-uranus">
+        <a-entity geometry="primitive: ring; radiusInner: 3.9; radiusOuter: 3.905" rotation="-90 0 0" material="shader: flat; opacity: 0.02"></a-entity>
+        <a-entity id="uranus-parent" animation="property: rotation; to: 0 360 0; dur: 68000; loop: true; easing: linear">
+          <a-sphere id="uranus" radius="0.09" position="3.9 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/uranus.jpg"
+                    material="shader: standard"></a-sphere>
+        </a-entity>
+      </a-entity>
+
+      <!-- Neptune -->
+      <a-entity class="orbit" id="orbit-neptune">
+        <a-entity geometry="primitive: ring; radiusInner: 4.5; radiusOuter: 4.505" rotation="-90 0 0" material="shader: flat; opacity: 0.02"></a-entity>
+        <a-entity id="neptune-parent" animation="property: rotation; to: 0 360 0; dur: 82000; loop: true; easing: linear">
+          <a-sphere id="neptune" radius="0.085" position="4.5 0 0"
+                    src="https://raw.githubusercontent.com/eleonorakiziv/planet-textures/main/neptune.jpg"
+                    material="shader: standard"></a-sphere>
+        </a-entity>
+      </a-entity>
+
+    </a-entity>
+
+    <!-- Camera (AR.js จัดการกล้องด้านหลังให้เป็น background) -->
+    <a-entity camera look-controls position="0 1.6 0"></a-entity>
+
+  </a-scene>
+
+  <script>
+    // วางระบบสุริยะ: เมื่อกดปุ่ม จะโชว์และวางในจุดหน้ากล้อง
+    const placeBtn = document.getElementById('placeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const solarRoot = document.getElementById('solarRoot');
+
+    placeBtn.addEventListener('click', () => {
+      // แสดงระบบสุริยะ (ตั้งค่าตำแหน่งเล็กน้อยตามกล้อง)
+      solarRoot.setAttribute('visible', 'true');
+
+      // เอาไปวางหน้าผู้ใช้ประมาณ 1.5 เมตร (แก้ได้ตามต้องการ)
+      const cam = document.querySelector('[camera]');
+      const camPos = cam.object3D.position;
+      const camDir = new THREE.Vector3();
+      cam.object3D.getWorldDirection(camDir);
+
+      const target = {
+        x: camPos.x + camDir.x * 1.5,
+        y: camPos.y + camDir.y * 1.5 - 0.4,
+        z: camPos.z + camDir.z * 1.5
+      };
+      solarRoot.setAttribute('position', `${target.x} ${target.y} ${target.z}`);
+      // ให้หันหน้าเข้าหาผู้ใช้
+      solarRoot.object3D.lookAt(cam.object3D.position);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      solarRoot.setAttribute('visible', 'false');
+      solarRoot.setAttribute('position', '0 0 -2');
+      solarRoot.setAttribute('rotation', '0 0 0');
+    });
+
+    // แตะพื้นที่หน้าจอครั้งแรกอาจจะต้องให้ AR.js เริ่มกล้อง — บางอุปกรณ์ต้องการ user gesture
+    document.body.addEventListener('click', () => {
+      // no-op placeholder to ensure gesture for camera start on some mobile browsers
+    }, { once: true });
+  </script>
+</body>
+</html>
