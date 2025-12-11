@@ -3,46 +3,218 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Solar System (GLTF + WebXR)</title>
-
-  <!-- A-Frame -->
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-
-  <!-- Orbit Control -->
-  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-orbit-controls-component/dist/aframe-orbit-controls-component.min.js"></script>
+  <title>ระบบสุริยะ (A-Frame WebXR)</title>
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 
   <style>
-    body { margin: 0; }
+    body { margin: 0; font-family: sans-serif; }
+    #infoPanel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 260px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      z-index: 10;
+      font-size: 14px;
+      display: none;
+    }
+    #infoPanel h3 { margin: 0 0 6px 0; font-size: 16px }
+    #infoPanel p { margin: 6px 0 }
+    #closeInfo { cursor: pointer; background:#333; padding:4px 8px; border-radius:4px }
   </style>
 </head>
 
 <body>
+  <div id="infoPanel">
+    <h3 id="infoTitle"></h3>
+    <p id="infoText"></p>
+    <div style="text-align:right"><span id="closeInfo">ปิด</span></div>
+  </div>
 
-<a-scene
-  xr-mode-ui="enabled: true"
-  webxr="optionalFeatures: hit-test, local-floor;"
-  background="color: #000"
-  renderer="antialias: true">
+  <a-scene renderer="antialias: true">
 
-  <!-- กล้อง -->
-  <a-entity id="cameraRig">
-    <a-entity camera
-      position="0 200 400"
-      orbit-controls="target: 0 0 0; enableDamping: true; dampingFactor: 0.2;">
+    <!-- 🌌 แบ็คกราวอวกาศ -->
+    <a-sky src="textures/stars.jpg"></a-sky>
+
+    <!-- 🌞 Sun -->
+    <a-entity id="sun-parent" position="0 0 0">
+      <a-sphere id="sun" radius="1.2" src="textures/sun.jpg"
+                material="emissive: #ffffff; emissiveIntensity: 0.4">
+      </a-sphere>
+      <a-animation attribute="rotation" to="0 360 0" dur="20000" repeat="indefinite"></a-animation>
     </a-entity>
-  </a-entity>
 
-  <!-- แสง -->
-  <a-entity light="type: ambient; intensity: 1"></a-entity>
-  <a-entity light="type: directional; intensity: 1.2" position="10 10 10"></a-entity>
+    <!-- 💡 แสง -->
+    <a-entity light="type: ambient; intensity: 0.3"></a-entity>
+    <a-entity light="type: point; intensity: 2; distance: 80" position="0 0 0"></a-entity>
 
-  <!-- โหลดโมเดล (สำคัญ: scale เล็กลง) -->
-  <a-entity id="solarModel"
-            gltf-model="solar_system_animation/scene.gltf"
-            scale="0.01 0.01 0.01"
-            position="0 0 0">
-  </a-entity>
+    <!-- 👀 กล้อง -->
+    <a-entity id="cameraRig" position="0 1.6 7">
+      <a-entity camera look-controls wasd-controls>
+        <a-entity cursor="fuse:false; rayOrigin:mouse"
+                  raycaster="objects: .clickable"
+                  position="0 0 -1"
+                  geometry="primitive:ring; radiusInner:0.01; radiusOuter:0.02"
+                  material="color:#fff">
+        </a-entity>
+      </a-entity>
+    </a-entity>
 
-</a-scene>
+    <!-- 🪐 Mercury -->
+    <a-entity id="orbit-mercury">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:1.6; radiusOuter:1.61"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:8000; loop:true">
+        <a-sphere class="clickable" radius="0.08" position="1.6 0 0"
+                  src="textures/mercury.jpg"
+                  data-name="Mercury"
+                  data-info="ดาวที่อยู่ใกล้ดวงอาทิตย์ที่สุด">
+        </a-sphere>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🪐 Venus -->
+    <a-entity id="orbit-venus">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:2.3; radiusOuter:2.31"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:14000; loop:true">
+        <a-sphere class="clickable" radius="0.14" position="2.3 0 0"
+                  src="textures/venus.jpg"
+                  data-name="Venus"
+                  data-info="ดาวศุกร์ ร้อนจัด มีชั้นเมฆหนา">
+        </a-sphere>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🌍 Earth + Moon -->
+    <a-entity id="orbit-earth">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:22000; loop:true">
+        <a-sphere id="earth" class="clickable" radius="0.18" position="3.2 0 0"
+                  src="textures/earth.jpg"
+                  data-name="Earth"
+                  data-info="โลก มีน้ำและสิ่งมีชีวิต">
+        </a-sphere>
+
+        <!-- Moon -->
+        <a-entity animation="property:rotation; to:0 360 0; dur:3000; loop:true">
+          <a-sphere radius="0.05" position="3.45 0 0"
+                    class="clickable"
+                    src="textures/moon.jpg"
+                    data-name="Moon"
+                    data-info="ดวงจันทร์ของโลก">
+          </a-sphere>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🔴 Mars -->
+    <a-entity id="orbit-mars">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:4.1; radiusOuter:4.11"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:32000; loop:true">
+        <a-sphere radius="0.12" position="4.1 0 0" class="clickable"
+                  src="textures/mars.jpg"
+                  data-name="Mars"
+                  data-info="ดาวเคราะห์สีแดง">
+        </a-sphere>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🟤 Jupiter -->
+    <a-entity id="orbit-jupiter">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:5.6; radiusOuter:5.61"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:44000; loop:true">
+        <a-sphere radius="0.5" position="5.6 0 0" class="clickable"
+                  src="textures/jupiter.jpg"
+                  data-name="Jupiter"
+                  data-info="ดาวแก๊สยักษ์ มีพายุ Great Red Spot">
+        </a-sphere>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🪐 Saturn -->
+    <a-entity id="orbit-saturn">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:7.0; radiusOuter:7.01"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:56000; loop:true">
+        <a-entity position="7 0 0">
+          <a-sphere radius="0.42" class="clickable"
+                    src="textures/saturn.jpg"
+                    data-name="Saturn"
+                    data-info="ดาวเสาร์และวงแหวนสวยงาม">
+          </a-sphere>
+
+          <!-- Saturn Ring -->
+          <a-ring src="textures/saturn_ring.jpg"
+                  rotation="90 0 0"
+                  radius-inner="0.55"
+                  radius-outer="0.9"
+                  material="opacity:0.9">
+          </a-ring>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🔵 Uranus -->
+    <a-entity id="orbit-uranus">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:8.6; radiusOuter:8.61"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:68000; loop:true">
+        <a-sphere radius="0.3" position="8.6 0 0" class="clickable"
+                  src="textures/uranus.jpg"
+                  data-name="Uranus"
+                  data-info="ดาวมฤตยู หมุนเอียงมากที่สุด">
+        </a-sphere>
+      </a-entity>
+    </a-entity>
+
+    <!-- 🔵 Neptune -->
+    <a-entity id="orbit-neptune">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:10; radiusOuter:10.01"
+                material="color:#555; opacity:0.2"></a-entity>
+
+      <a-entity animation="property:rotation; to:0 360 0; dur:82000; loop:true">
+        <a-sphere radius="0.32" position="10 0 0" class="clickable"
+                  src="textures/neptune.jpg"
+                  data-name="Neptune"
+                  data-info="ดาวเนปจูน มีพายุรุนแรงที่สุด">
+        </a-sphere>
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+
+
+  <!-- 🎯 ระบบคลิกเพื่อดูข้อมูล -->
+  <script>
+  document.querySelectorAll('.clickable').forEach(el => {
+    el.addEventListener('click', e => {
+      const planet = e.detail.intersectedEl;   // ← ตัวนี้คือ "ดวงดาวจริง ๆ"
+
+      document.getElementById('infoTitle').innerText = planet.dataset.name;
+      document.getElementById('infoText').innerText  = planet.dataset.info;
+      document.getElementById('infoPanel').style.display = 'block';
+    });
+  });
+
+  document.getElementById('closeInfo').onclick = () => {
+    document.getElementById('infoPanel').style.display = 'none';
+  };
+</script>
+
+
 </body>
 </html>
