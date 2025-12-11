@@ -26,20 +26,12 @@
     #infoPanel p { margin: 6px 0 }
     #closeInfo { cursor: pointer; background:#333; padding:4px 8px; border-radius:4px }
     
-    /* overlay จำเป็นต่อ AR */
-    #overlay {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      z-index: 5;
-      pointer-events: none;
-    }
+    #overlay { position:absolute; width:100%; height:100%; z-index:5; pointer-events:none; }
   </style>
 </head>
 
 <body>
 
-  <!-- สำหรับ dom-overlay -->
   <div id="overlay"></div>
 
   <div id="infoPanel">
@@ -51,34 +43,27 @@
   <a-scene
     xr-mode-ui="enabled: true"
     webxr="optionalFeatures: ['hit-test']; requiredFeatures: ['dom-overlay']; dom-overlay: #overlay;"
-    renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
-  >
+    renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true">
 
-    <!-- 🌌 sky (จะซ่อนเมื่อเข้า AR) -->
     <a-sky id="sky" src="textures/stars.jpg"></a-sky>
 
-    <!-- 🌞 Sun -->
     <a-entity id="sun-parent" position="0 0 0">
-  <a-sphere id="sun" radius="1.2" src="textures/sun.jpg"
-            material="shader: flat">
-  </a-sphere>
+      <a-sphere id="sun" radius="1.2" src="textures/sun.jpg"
+                material="shader: flat"></a-sphere>
+      <a-animation attribute="rotation" to="0 360 0" dur="20000" repeat="indefinite"></a-animation>
+    </a-entity>
 
-  <a-animation attribute="rotation" to="0 360 0" dur="20000" repeat="indefinite"></a-animation>
-</a-entity>
-
-    <!-- 💡 Light -->
     <a-entity light="type: ambient; intensity: 0.3"></a-entity>
     <a-entity light="type: point; intensity: 2; distance: 80" position="0 0 0"></a-entity>
 
-    <!-- 👀 Camera -->
-    <a-entity id="cameraRig" position="0 1.6 7">
+    <!-- 👀 Camera + Pinch Zoom -->
+    <a-entity id="cameraRig" pinch-zoom position="0 1.6 7">
       <a-entity camera look-controls wasd-controls>
         <a-entity cursor="fuse:false; rayOrigin:mouse"
                   raycaster="objects: .clickable"
                   position="0 0 -1"
                   geometry="primitive:ring; radiusInner:0.01; radiusOuter:0.02"
-                  material="color:#fff">
-        </a-entity>
+                  material="color:#fff"></a-entity>
       </a-entity>
     </a-entity>
 
@@ -88,17 +73,12 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:8000; loop:true">
-        <a-sphere class="clickable"
-          label="text: 1"
-          radius="0.08"
-          position="1.6 0 0"
-          src="textures/mercury.jpg"
-          data-name="Mercury"
-          data-info="ดาวที่อยู่ใกล้ดวงอาทิตย์ที่สุด">
-</a-sphere>
+        <a-sphere class="clickable" radius="0.08" position="1.6 0 0"
+                  src="textures/mercury.jpg"
+                  data-name="Mercury"
+                  data-info="ดาวที่อยู่ใกล้ดวงอาทิตย์ที่สุด"></a-sphere>
       </a-entity>
     </a-entity>
-
 
     <!-- Venus -->
     <a-entity id="orbit-venus">
@@ -106,58 +86,40 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:14000; loop:true">
-        <a-sphere class="clickable"
-          label="text: 2"
-          radius="0.14"
-          position="2.3 0 0"
-          src="textures/venus.jpg"
-          data-name="Venus"
-          data-info="ดาวศุกร์ ร้อนจัด มีชั้นเมฆหนา">
-        </a-sphere>       
+        <a-sphere class="clickable" radius="0.14" position="2.3 0 0"
+                  src="textures/venus.jpg"
+                  data-name="Venus"
+                  data-info="ดาวศุกร์ ร้อนจัด"></a-sphere>
       </a-entity>
     </a-entity>
 
-
     <!-- Earth + Moon -->
-<a-entity id="orbit-earth">
-  <!-- วงโคจรของโลก -->
-  <a-entity rotation="-90 0 0"
-            geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21"
-            material="color:#555; opacity:0.2"></a-entity>
+    <a-entity id="orbit-earth">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21"
+                material="color:#555; opacity:0.2"></a-entity>
 
-  <!-- หมุนโลกไปรอบดวงอาทิตย์ -->
-  <a-entity id="earth-system" animation="property:rotation; to:0 360 0; dur:22000; loop:true">
+      <a-entity id="earth-system" animation="property:rotation; to:0 360 0; dur:22000; loop:true">
 
-    <!-- 🌍 Earth -->
-    <a-sphere id="earth" class="clickable"
-          label="text: 3"
-          radius="0.18"
-          position="3.2 0 0"
-          src="textures/earth.jpg"
-          data-name="Earth"
-          data-info="โลก มีน้ำและสิ่งมีชีวิต">
-       </a-sphere>
+        <a-sphere id="earth" class="clickable"
+                  radius="0.18"
+                  position="3.2 0 0"
+                  src="textures/earth.jpg"
+                  data-name="Earth"
+                  data-info="โลก มีน้ำและสิ่งมีชีวิต"></a-sphere>
 
-    <!-- 🌙 Moon Orbit -->
-    <!-- ต้องย้ายตำแหน่งวงโคจรไปอยู่รอบโลก -->
-    <a-entity id="moon-orbit"
-              position="3.2 0 0"
-              animation="property:rotation; to:0 360 0; dur:3000; loop:true">
+        <a-entity id="moon-orbit" position="3.2 0 0"
+                  animation="property:rotation; to:0 360 0; dur:3000; loop:true">
 
-      <a-sphere radius="0.05"
-                position="0.25 0 0"
-                class="clickable"
-                src="textures/moon.jpg"
-                data-name="Moon"
-                data-info="ดวงจันทร์ของโลก">
-      </a-sphere>
+          <a-sphere radius="0.05"
+                    position="0.25 0 0"
+                    class="clickable"
+                    src="textures/moon.jpg"
+                    data-name="Moon"
+                    data-info="ดวงจันทร์ของโลก"></a-sphere>
 
+        </a-entity>
+      </a-entity>
     </a-entity>
-
-  </a-entity>
-</a-entity>
-
-
 
 
     <!-- Mars -->
@@ -166,16 +128,12 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:32000; loop:true">
-        <a-sphere label="text: 4"
-                  radius="0.12" position="4.1 0 0" 
-                  class="clickable"
+        <a-sphere radius="0.12" position="4.1 0 0" class="clickable"
                   src="textures/mars.jpg"
                   data-name="Mars"
-                  data-info="ดาวเคราะห์สีแดง">
-        </a-sphere>
+                  data-info="ดาวเคราะห์สีแดง"></a-sphere>
       </a-entity>
     </a-entity>
-
 
     <!-- Jupiter -->
     <a-entity id="orbit-jupiter">
@@ -183,14 +141,12 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:44000; loop:true">
-        <a-sphere label="text: 5"radius="0.5" position="5.6 0 0" class="clickable"
+        <a-sphere radius="0.5" position="5.6 0 0" class="clickable"
                   src="textures/jupiter.jpg"
                   data-name="Jupiter"
-                  data-info="ดาวแก๊สยักษ์ มีพายุ Great Red Spot">
-        </a-sphere>
+                  data-info="ดาวแก๊สยักษ์"></a-sphere>
       </a-entity>
     </a-entity>
-
 
     <!-- Saturn -->
     <a-entity id="orbit-saturn">
@@ -199,22 +155,19 @@
 
       <a-entity animation="property:rotation; to:0 360 0; dur:56000; loop:true">
         <a-entity position="7 0 0">
-          <a-sphere label="text: 6"radius="0.42" class="clickable"
+          <a-sphere radius="0.42" class="clickable"
                     src="textures/saturn.jpg"
                     data-name="Saturn"
-                    data-info="ดาวเสาร์และวงแหวนสวยงาม">
-          </a-sphere>
+                    data-info="ดาวเสาร์และวงแหวน"></a-sphere>
 
           <a-ring src="textures/saturn_ring.jpg"
                   rotation="90 0 0"
                   radius-inner="0.55"
                   radius-outer="0.9"
-                  material="opacity:0.9">
-          </a-ring>
+                  material="opacity:0.9"></a-ring>
         </a-entity>
       </a-entity>
     </a-entity>
-
 
     <!-- Uranus -->
     <a-entity id="orbit-uranus">
@@ -222,14 +175,12 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:68000; loop:true">
-        <a-sphere label="text: 7"radius="0.3" position="8.6 0 0" class="clickable"
+        <a-sphere radius="0.3" position="8.6 0 0" class="clickable"
                   src="textures/uranus.jpg"
                   data-name="Uranus"
-                  data-info="ดาวมฤตยู หมุนเอียงมากที่สุด">
-        </a-sphere>
+                  data-info="หมุนเอียงมากที่สุด"></a-sphere>
       </a-entity>
     </a-entity>
-
 
     <!-- Neptune -->
     <a-entity id="orbit-neptune">
@@ -237,18 +188,15 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:82000; loop:true">
-        <a-sphere label="text: 8"radius="0.32" position="10 0 0" class="clickable"
+        <a-sphere radius="0.32" position="10 0 0" class="clickable"
                   src="textures/neptune.jpg"
                   data-name="Neptune"
-                  data-info="ดาวเนปจูน มีพายุรุนแรงที่สุด">
-        </a-sphere>
+                  data-info="ดาวเนปจูน"></a-sphere>
       </a-entity>
     </a-entity>
 
   </a-scene>
 
-
-  <!-- ⭐ Click Info System + AR Sky Control -->
   <script>
     /* ---------- ระบบคลิกดาว ---------- */
     document.querySelectorAll('.clickable').forEach(el => {
@@ -270,46 +218,52 @@
 
     scene.addEventListener("enter-ar", () => {
       sky.setAttribute("visible", "false");
-      console.log("AR Mode: sky hidden");
     });
 
     scene.addEventListener("exit-ar", () => {
       sky.setAttribute("visible", "true");
-      console.log("Exit AR: sky visible");
-    });
-    AFRAME.registerComponent('label', {
-  schema: {
-    text: { type: 'string' },
-    size: { type: 'number', default: 0.2 }
-  },
-  init: function () {
-    const label = document.createElement('a-entity');
-    label.setAttribute('text', {
-      value: this.data.text,
-      align: 'center',
-      color: '#fff',
-      width: 2
-    });
-    label.setAttribute('geometry', {
-      primitive: 'circle',
-      radius: this.data.size
-    });
-    label.setAttribute('material', {
-      color: '#ff4444',
-      opacity: 0.9
-    });
-    label.setAttribute('position', '0 0.3 0');
-    label.classList.add('clickable');
-
-    // คลิกได้เหมือนดาวจริง
-    label.addEventListener('click', () => {
-      this.el.emit('label-click');
     });
 
-    this.el.appendChild(label);
-  }
-});
+    /* ==========================================================
+       ⭐⭐⭐  Pinch Zoom Component  ⭐⭐⭐
+       ========================================================== */
+    AFRAME.registerComponent('pinch-zoom', {
+      schema: { zoomSpeed: { default: 0.02 }, min: { default: 1 }, max: { default: 10 } },
+
+      init: function () {
+        this.isPinching = false;
+        this.startDistance = 0;
+        this.currentZoom = 7;   // ระยะเริ่มต้นตามกล้อง
+        this.camera = this.el;  // ใช้ cameraRig โดยตรง
+      },
+
+      tick: function () {
+        const canvas = this.el.sceneEl.canvas;
+        if (!canvas || !canvas.touches || canvas.touches.length < 2) return;
+
+        const [t1, t2] = canvas.touches;
+
+        const dx = t1.clientX - t2.clientX;
+        const dy = t1.clientY - t2.clientY;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+
+        if (!this.isPinching) {
+          this.startDistance = distance;
+          this.isPinching = true;
+          return;
+        }
+
+        const delta = distance - this.startDistance;
+        this.startDistance = distance;
+
+        this.currentZoom -= delta * this.data.zoomSpeed;
+
+        this.currentZoom = Math.min(this.data.max, Math.max(this.data.min, this.currentZoom));
+
+        this.camera.object3D.position.z = this.currentZoom;
+      }
+    });
+
   </script>
-
 </body>
 </html>
