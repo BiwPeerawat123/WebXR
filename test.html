@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ระบบสุริยะ (A-Frame WebXR)</title>
+
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 
   <style>
@@ -17,17 +18,30 @@
       color: white;
       padding: 12px;
       border-radius: 8px;
-      z-index: 10;
+      z-index: 20;
       font-size: 14px;
       display: none;
     }
     #infoPanel h3 { margin: 0 0 6px 0; font-size: 16px }
     #infoPanel p { margin: 6px 0 }
     #closeInfo { cursor: pointer; background:#333; padding:4px 8px; border-radius:4px }
+    
+    /* overlay จำเป็นต่อ AR */
+    #overlay {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- สำหรับ dom-overlay -->
+  <div id="overlay"></div>
+
   <div id="infoPanel">
     <h3 id="infoTitle"></h3>
     <p id="infoText"></p>
@@ -35,13 +49,13 @@
   </div>
 
   <a-scene
-  xr-mode-ui="enabled: true"
-  webxr="optionalFeatures: hit-test"
-  renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
->
+    xr-mode-ui="enabled: true"
+    webxr="optionalFeatures: ['hit-test']; requiredFeatures: ['dom-overlay']; dom-overlay: #overlay;"
+    renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
+  >
 
-    <!-- 🌌 แบ็คกราวอวกาศ -->
-    <a-sky src="textures/stars.jpg"></a-sky>
+    <!-- 🌌 sky (จะซ่อนเมื่อเข้า AR) -->
+    <a-sky id="sky" src="textures/stars.jpg"></a-sky>
 
     <!-- 🌞 Sun -->
     <a-entity id="sun-parent" position="0 0 0">
@@ -51,11 +65,11 @@
       <a-animation attribute="rotation" to="0 360 0" dur="20000" repeat="indefinite"></a-animation>
     </a-entity>
 
-    <!-- 💡 แสง -->
+    <!-- 💡 Light -->
     <a-entity light="type: ambient; intensity: 0.3"></a-entity>
     <a-entity light="type: point; intensity: 2; distance: 80" position="0 0 0"></a-entity>
 
-    <!-- 👀 กล้อง -->
+    <!-- 👀 Camera -->
     <a-entity id="cameraRig" position="0 1.6 7">
       <a-entity camera look-controls wasd-controls>
         <a-entity cursor="fuse:false; rayOrigin:mouse"
@@ -67,7 +81,7 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🪐 Mercury -->
+    <!-- Mercury -->
     <a-entity id="orbit-mercury">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:1.6; radiusOuter:1.61"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -81,7 +95,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🪐 Venus -->
+
+    <!-- Venus -->
     <a-entity id="orbit-venus">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:2.3; radiusOuter:2.31"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -95,31 +110,49 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🌍 Earth + Moon -->
-    <a-entity id="orbit-earth">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21"
-                material="color:#555; opacity:0.2"></a-entity>
 
-      <a-entity animation="property:rotation; to:0 360 0; dur:22000; loop:true">
-        <a-sphere id="earth" class="clickable" radius="0.18" position="3.2 0 0"
-                  src="textures/earth.jpg"
-                  data-name="Earth"
-                  data-info="โลก มีน้ำและสิ่งมีชีวิต">
-        </a-sphere>
+    <!-- Earth + Moon -->
+<a-entity id="orbit-earth">
+  <!-- วงโคจรของโลก -->
+  <a-entity rotation="-90 0 0"
+            geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21"
+            material="color:#555; opacity:0.2"></a-entity>
 
-        <!-- Moon -->
-        <a-entity animation="property:rotation; to:0 360 0; dur:3000; loop:true">
-          <a-sphere radius="0.05" position="3.45 0 0"
-                    class="clickable"
-                    src="textures/moon.jpg"
-                    data-name="Moon"
-                    data-info="ดวงจันทร์ของโลก">
-          </a-sphere>
-        </a-entity>
-      </a-entity>
+  <!-- หมุนโลกไปรอบดวงอาทิตย์ -->
+  <a-entity id="earth-system" animation="property:rotation; to:0 360 0; dur:22000; loop:true">
+
+    <!-- 🌍 Earth -->
+    <a-sphere id="earth" class="clickable"
+              radius="0.18"
+              position="3.2 0 0"
+              src="textures/earth.jpg"
+              data-name="Earth"
+              data-info="โลก มีน้ำและสิ่งมีชีวิต">
+    </a-sphere>
+
+    <!-- 🌙 Moon Orbit -->
+    <!-- ต้องย้ายตำแหน่งวงโคจรไปอยู่รอบโลก -->
+    <a-entity id="moon-orbit"
+              position="3.2 0 0"
+              animation="property:rotation; to:0 360 0; dur:3000; loop:true">
+
+      <a-sphere radius="0.05"
+                position="0.25 0 0"
+                class="clickable"
+                src="textures/moon.jpg"
+                data-name="Moon"
+                data-info="ดวงจันทร์ของโลก">
+      </a-sphere>
+
     </a-entity>
 
-    <!-- 🔴 Mars -->
+  </a-entity>
+</a-entity>
+
+
+
+
+    <!-- Mars -->
     <a-entity id="orbit-mars">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:4.1; radiusOuter:4.11"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -133,7 +166,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🟤 Jupiter -->
+
+    <!-- Jupiter -->
     <a-entity id="orbit-jupiter">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:5.6; radiusOuter:5.61"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -147,7 +181,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🪐 Saturn -->
+
+    <!-- Saturn -->
     <a-entity id="orbit-saturn">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:7.0; radiusOuter:7.01"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -160,7 +195,6 @@
                     data-info="ดาวเสาร์และวงแหวนสวยงาม">
           </a-sphere>
 
-          <!-- Saturn Ring -->
           <a-ring src="textures/saturn_ring.jpg"
                   rotation="90 0 0"
                   radius-inner="0.55"
@@ -171,7 +205,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🔵 Uranus -->
+
+    <!-- Uranus -->
     <a-entity id="orbit-uranus">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:8.6; radiusOuter:8.61"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -185,7 +220,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- 🔵 Neptune -->
+
+    <!-- Neptune -->
     <a-entity id="orbit-neptune">
       <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:10; radiusOuter:10.01"
                 material="color:#555; opacity:0.2"></a-entity>
@@ -202,35 +238,36 @@
   </a-scene>
 
 
-  <!-- 🎯 ระบบคลิกเพื่อดูข้อมูล -->
+  <!-- ⭐ Click Info System + AR Sky Control -->
   <script>
-  document.querySelectorAll('.clickable').forEach(el => {
-    el.addEventListener('click', e => {
-      const planet = e.detail.intersectedEl;   // ← ตัวนี้คือ "ดวงดาวจริง ๆ"
-
-      document.getElementById('infoTitle').innerText = planet.dataset.name;
-      document.getElementById('infoText').innerText  = planet.dataset.info;
-      document.getElementById('infoPanel').style.display = 'block';
+    /* ---------- ระบบคลิกดาว ---------- */
+    document.querySelectorAll('.clickable').forEach(el => {
+      el.addEventListener('click', e => {
+        const planet = e.detail.intersectedEl;
+        document.getElementById('infoTitle').innerText = planet.dataset.name;
+        document.getElementById('infoText').innerText  = planet.dataset.info;
+        document.getElementById('infoPanel').style.display = 'block';
+      });
     });
-  });
 
-  document.getElementById('closeInfo').onclick = () => {
-    document.getElementById('infoPanel').style.display = 'none';
-  };
-  const sceneEl = document.querySelector('a-scene');
-  const sky = document.querySelector('a-sky');
+    document.getElementById('closeInfo').onclick = () => {
+      document.getElementById('infoPanel').style.display = 'none';
+    };
 
-  sceneEl.addEventListener('enter-vr', () => {
-    if (sceneEl.is('ar-mode')) {
-      sky.setAttribute('visible', 'false');   // ซ่อน sky ใน AR
-    }
-  });
+    /* ---------- ควบคุม sky ตอน AR ---------- */
+    const scene = document.querySelector("a-scene");
+    const sky = document.getElementById("sky");
 
-  sceneEl.addEventListener('exit-vr', () => {
-    sky.setAttribute('visible', 'true');      // กลับมาเมื่อออก AR
-  });
-</script>
+    scene.addEventListener("enter-ar", () => {
+      sky.setAttribute("visible", "false");
+      console.log("AR Mode: sky hidden");
+    });
 
+    scene.addEventListener("exit-ar", () => {
+      sky.setAttribute("visible", "true");
+      console.log("Exit AR: sky visible");
+    });
+  </script>
 
 </body>
 </html>
