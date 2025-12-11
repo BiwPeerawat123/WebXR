@@ -59,11 +59,12 @@
 
     <!-- 🌞 Sun -->
     <a-entity id="sun-parent" position="0 0 0">
-      <a-sphere id="sun" radius="1.2" src="textures/sun.jpg"
-                material="emissive: #ffffff; emissiveIntensity: 0.4">
-      </a-sphere>
-      <a-animation attribute="rotation" to="0 360 0" dur="20000" repeat="indefinite"></a-animation>
-    </a-entity>
+  <a-sphere id="sun" radius="1.2" src="textures/sun.jpg"
+            material="shader: flat">
+  </a-sphere>
+
+  <a-animation attribute="rotation" to="0 360 0" dur="20000" repeat="indefinite"></a-animation>
+</a-entity>
 
     <!-- 💡 Light -->
     <a-entity light="type: ambient; intensity: 0.3"></a-entity>
@@ -87,11 +88,14 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:8000; loop:true">
-        <a-sphere class="clickable" radius="0.08" position="1.6 0 0"
-                  src="textures/mercury.jpg"
-                  data-name="Mercury"
-                  data-info="ดาวที่อยู่ใกล้ดวงอาทิตย์ที่สุด">
-        </a-sphere>
+        <a-sphere class="clickable"
+          label="text: 1"
+          radius="0.08"
+          position="1.6 0 0"
+          src="textures/mercury.jpg"
+          data-name="Mercury"
+          data-info="ดาวที่อยู่ใกล้ดวงอาทิตย์ที่สุด">
+</a-sphere>
       </a-entity>
     </a-entity>
 
@@ -102,11 +106,14 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:14000; loop:true">
-        <a-sphere class="clickable" radius="0.14" position="2.3 0 0"
-                  src="textures/venus.jpg"
-                  data-name="Venus"
-                  data-info="ดาวศุกร์ ร้อนจัด มีชั้นเมฆหนา">
-        </a-sphere>
+        <a-sphere class="clickable"
+          label="text: 2"
+          radius="0.14"
+          position="2.3 0 0"
+          src="textures/venus.jpg"
+          data-name="Venus"
+          data-info="ดาวศุกร์ ร้อนจัด มีชั้นเมฆหนา">
+        </a-sphere>       
       </a-entity>
     </a-entity>
 
@@ -123,12 +130,13 @@
 
     <!-- 🌍 Earth -->
     <a-sphere id="earth" class="clickable"
-              radius="0.18"
-              position="3.2 0 0"
-              src="textures/earth.jpg"
-              data-name="Earth"
-              data-info="โลก มีน้ำและสิ่งมีชีวิต">
-    </a-sphere>
+          label="text: 3"
+          radius="0.18"
+          position="3.2 0 0"
+          src="textures/earth.jpg"
+          data-name="Earth"
+          data-info="โลก มีน้ำและสิ่งมีชีวิต">
+       </a-sphere>
 
     <!-- 🌙 Moon Orbit -->
     <!-- ต้องย้ายตำแหน่งวงโคจรไปอยู่รอบโลก -->
@@ -158,7 +166,9 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:32000; loop:true">
-        <a-sphere radius="0.12" position="4.1 0 0" class="clickable"
+        <a-sphere label="text: 4"
+                  radius="0.12" position="4.1 0 0" 
+                  class="clickable"
                   src="textures/mars.jpg"
                   data-name="Mars"
                   data-info="ดาวเคราะห์สีแดง">
@@ -173,7 +183,7 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:44000; loop:true">
-        <a-sphere radius="0.5" position="5.6 0 0" class="clickable"
+        <a-sphere label="text: 5"radius="0.5" position="5.6 0 0" class="clickable"
                   src="textures/jupiter.jpg"
                   data-name="Jupiter"
                   data-info="ดาวแก๊สยักษ์ มีพายุ Great Red Spot">
@@ -189,7 +199,7 @@
 
       <a-entity animation="property:rotation; to:0 360 0; dur:56000; loop:true">
         <a-entity position="7 0 0">
-          <a-sphere radius="0.42" class="clickable"
+          <a-sphere label="text: 6"radius="0.42" class="clickable"
                     src="textures/saturn.jpg"
                     data-name="Saturn"
                     data-info="ดาวเสาร์และวงแหวนสวยงาม">
@@ -212,7 +222,7 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:68000; loop:true">
-        <a-sphere radius="0.3" position="8.6 0 0" class="clickable"
+        <a-sphere label="text: 7"radius="0.3" position="8.6 0 0" class="clickable"
                   src="textures/uranus.jpg"
                   data-name="Uranus"
                   data-info="ดาวมฤตยู หมุนเอียงมากที่สุด">
@@ -227,7 +237,7 @@
                 material="color:#555; opacity:0.2"></a-entity>
 
       <a-entity animation="property:rotation; to:0 360 0; dur:82000; loop:true">
-        <a-sphere radius="0.32" position="10 0 0" class="clickable"
+        <a-sphere label="text: 8"radius="0.32" position="10 0 0" class="clickable"
                   src="textures/neptune.jpg"
                   data-name="Neptune"
                   data-info="ดาวเนปจูน มีพายุรุนแรงที่สุด">
@@ -267,6 +277,38 @@
       sky.setAttribute("visible", "true");
       console.log("Exit AR: sky visible");
     });
+    AFRAME.registerComponent('label', {
+  schema: {
+    text: { type: 'string' },
+    size: { type: 'number', default: 0.2 }
+  },
+  init: function () {
+    const label = document.createElement('a-entity');
+    label.setAttribute('text', {
+      value: this.data.text,
+      align: 'center',
+      color: '#fff',
+      width: 2
+    });
+    label.setAttribute('geometry', {
+      primitive: 'circle',
+      radius: this.data.size
+    });
+    label.setAttribute('material', {
+      color: '#ff4444',
+      opacity: 0.9
+    });
+    label.setAttribute('position', '0 0.3 0');
+    label.classList.add('clickable');
+
+    // คลิกได้เหมือนดาวจริง
+    label.addEventListener('click', () => {
+      this.el.emit('label-click');
+    });
+
+    this.el.appendChild(label);
+  }
+});
   </script>
 
 </body>
