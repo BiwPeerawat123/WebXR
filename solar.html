@@ -162,7 +162,7 @@
 <body>
 
   <div id="titleOverlay">
-    <h1>🌌 ระบบสุริยะ 🌌</h1>
+    <h1> ระบบสุริยะ </h1>
   </div>
 
   <div id="instructions">
@@ -188,9 +188,10 @@
   <a-scene
     xr-mode-ui="enabled: true"
     webxr="optionalFeatures: ['hit-test'];"
-    renderer="colorManagement: true; alpha: true; antialias: true">
+    renderer="colorManagement: true; alpha: true; antialias: true"
+    background="color: #000">
 
-    <a-sky id="sky" src="textures/stars.jpg"></a-sky>
+    <a-sky id="sky" src="textures/stars.jpg" visible="true"></a-sky>
 
     <!-- ดวงอาทิตย์พร้อมแสง glow -->
     <a-entity id="sun-parent" position="0 0 0">
@@ -455,12 +456,24 @@
     const scene = document.querySelector("a-scene");
     const sky = document.getElementById("sky");
 
-    if (sky) {
+    if (sky && scene) {
+      // เมื่อเข้าโหมด AR
       scene.addEventListener("enter-ar", () => {
+        console.log("เข้าโหมด AR");
         sky.setAttribute("visible", "false");
+        scene.setAttribute("background", "color: transparent");
       });
 
+      // เมื่อออกจากโหมด AR
       scene.addEventListener("exit-ar", () => {
+        console.log("ออกจากโหมด AR");
+        sky.setAttribute("visible", "true");
+        scene.setAttribute("background", "color: #000");
+      });
+
+      // สำหรับโหมด VR
+      scene.addEventListener("enter-vr", () => {
+        console.log("เข้าโหมด VR");
         sky.setAttribute("visible", "true");
       });
     }
