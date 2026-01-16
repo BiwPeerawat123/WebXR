@@ -14,6 +14,11 @@
       overflow: hidden;
     }
     
+    /* ซ่อนปุ่ม VR เดิมของ A-Frame */
+    .a-enter-vr-button {
+      display: none !important;
+    }
+
     #infoPanel {
       position: absolute;
       right: 16px;
@@ -33,14 +38,8 @@
     }
     
     @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
     
     #infoPanel h3 { 
@@ -52,10 +51,7 @@
       padding-bottom: 8px;
     }
     
-    #infoPanel p { 
-      margin: 10px 0;
-      line-height: 1.6;
-    }
+    #infoPanel p { margin: 10px 0; line-height: 1.6; }
     
     #closeInfo { 
       cursor: pointer; 
@@ -66,11 +62,6 @@
       transition: all 0.3s ease;
       font-weight: 600;
       box-shadow: 0 4px 15px rgba(102,126,234,0.4);
-    }
-    
-    #closeInfo:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102,126,234,0.6);
     }
     
     #controlPanel {
@@ -97,66 +88,85 @@
       transition: all 0.3s ease;
       box-shadow: 0 4px 15px rgba(102,126,234,0.4);
     }
-    
-    #controlPanel button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102,126,234,0.6);
-    }
-    
-    #speedControl {
-      margin-top: 8px;
+
+    /* ปุ่ม AR แบบกำหนดเอง */
+    #arButton {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 50;
+      background: linear-gradient(45deg, #ff0099, #493240);
       color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(255,0,153,0.4);
+      cursor: pointer;
+      display: block; /* แสดงตลอด หรือใช้ JS เช็ค WebXR ก็ได้ */
     }
+
+    #arButton:active { transform: scale(0.95); }
     
-    #speedSlider {
-      width: 100%;
-      margin-top: 4px;
-    }
+    #speedControl { margin-top: 8px; color: white; }
+    #speedSlider { width: 100%; margin-top: 4px; }
     
     #titleOverlay {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      z-index: 10;
-      pointer-events: none;
-      opacity: 1;
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      text-align: center; z-index: 10; pointer-events: none;
       transition: opacity 2s ease;
     }
-    
     #titleOverlay h1 {
-      font-size: 48px;
-      color: white;
+      font-size: 48px; color: white;
       text-shadow: 0 0 20px rgba(102,126,234,0.8), 0 0 40px rgba(118,75,162,0.6);
-      margin: 0;
-      animation: pulse 2s infinite;
+      margin: 0; animation: pulse 2s infinite;
     }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    
-    #titleOverlay.hidden {
-      opacity: 0;
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .hidden { opacity: 0 !important; }
     
     #instructions {
-      position: absolute;
-      left: 50%;
-      bottom: 20px;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.7);
-      padding: 12px 20px;
-      border-radius: 8px;
-      color: white;
-      font-size: 14px;
-      z-index: 15;
-      backdrop-filter: blur(10px);
+      position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%);
+      background: rgba(0,0,0,0.7); padding: 12px 20px;
+      border-radius: 8px; color: white; font-size: 14px;
+      z-index: 15; backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      width: 80%;
     }
   </style>
+
+  <script>
+    // Component ควบคุมการซ่อน Sky และดวงดาวเมื่อเข้า AR
+    AFRAME.registerComponent('ar-controller', {
+      init: function () {
+        const sceneEl = this.el;
+        const sky = document.getElementById('sky');
+        const stars = document.getElementById('stars');
+        const arBtn = document.getElementById('arButton');
+
+        // เมื่อเข้าสู่โหมด VR/AR
+        sceneEl.addEventListener('enter-vr', function () {
+          if (sceneEl.is('ar-mode')) {
+            // ซ่อน Sky และ Stars ในโหมด AR
+            if(sky) sky.setAttribute('visible', false);
+            if(stars) stars.setAttribute('visible', false);
+            
+            // ซ่อนปุ่ม AR เมื่อเข้าไปแล้ว
+            if(arBtn) arBtn.style.display = 'none';
+          }
+        });
+
+        // เมื่อออกจากโหมด
+        sceneEl.addEventListener('exit-vr', function () {
+          if(sky) sky.setAttribute('visible', true);
+          if(stars) stars.setAttribute('visible', true);
+          if(arBtn) arBtn.style.display = 'block';
+        });
+      }
+    });
+  </script>
 </head>
 
 <body>
@@ -166,7 +176,7 @@
   </div>
 
   <div id="instructions">
-    🖱️ คลิกที่ดาวเคราะห์เพื่อดูข้อมูล | 📱 ใช้สองนิ้วซูมเข้า-ออก | 🥽 กด VR เพื่อเข้าโหมด AR/VR
+    🖱️ คลิกที่ดาวเพื่อดูข้อมูล | 📱 ใช้ 2 นิ้วซูม
   </div>
 
   <div id="infoPanel">
@@ -185,32 +195,28 @@
     </div>
   </div>
 
+  <button id="arButton">👓 เข้าสู่โหมด AR</button>
+
   <a-scene
-    xr-mode-ui="enabled: true"
-    webxr="optionalFeatures: ['hit-test', 'dom-overlay'];"
-    renderer="colorManagement: true; antialias: true"
-    ar-mode-handler>
+    vr-mode-ui="enabled: false"
+    ar-controller
+    renderer="colorManagement: true; antialias: true; alpha: true"
+    webxr="optionalFeatures: dom-overlay; overlayElement: #overlay">
 
     <a-assets>
       <img id="skyTexture" src="textures/stars.jpg">
     </a-assets>
 
-    <a-sky id="sky" src="#skyTexture" visible="true"></a-sky>
+    <a-sky id="sky" src="#skyTexture"></a-sky>
+    <a-entity id="stars"></a-entity>
 
-    <!-- ดวงอาทิตย์พร้อมแสง glow -->
     <a-entity id="sun-parent" position="0 0 0">
       <a-sphere id="sun" radius="1.2" src="textures/sun.jpg"
-                material="shader: flat; emissive: #FDB813; emissiveIntensity: 0.5"></a-sphere>
-      
-      <!-- Glow effect -->
+              material="shader: flat; emissive: #FDB813; emissiveIntensity: 0.5"></a-sphere>
       <a-sphere radius="1.5" material="shader: flat; color: #FDB813; opacity: 0.3; transparent: true"></a-sphere>
       <a-sphere radius="1.8" material="shader: flat; color: #FFD700; opacity: 0.15; transparent: true"></a-sphere>
-      
       <a-animation attribute="rotation" to="0 360 0" dur="30000" repeat="indefinite"></a-animation>
     </a-entity>
-
-    <!-- ดาวพราวพราว -->
-    <a-entity id="stars"></a-entity>
 
     <a-entity light="type: ambient; intensity: 0.4"></a-entity>
     <a-entity light="type: point; intensity: 2.5; distance: 100; decay: 2" position="0 0 0"></a-entity>
@@ -225,11 +231,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- Mercury -->
     <a-entity id="orbit-mercury" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:1.6; radiusOuter:1.61"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:1.6; radiusOuter:1.61" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:8000; loop:true" class="planet-orbit">
         <a-entity position="1.6 0 0">
           <a-sphere class="clickable planet" radius="0.08" src="textures/mercury.jpg"
@@ -242,11 +245,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- Venus -->
     <a-entity id="orbit-venus" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:2.3; radiusOuter:2.31"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:2.3; radiusOuter:2.31" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:14000; loop:true" class="planet-orbit">
         <a-entity position="2.3 0 0">
           <a-sphere class="clickable planet" radius="0.14" src="textures/venus.jpg"
@@ -259,12 +259,9 @@
       </a-entity>
     </a-entity>
 
-    <!-- Earth + Moon -->
     <a-entity id="orbit-earth" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21"
-                material="color:#888; opacity:0.3"></a-entity>
-
-      <a-entity id="earth-system" animation="property:rotation; to:0 360 0; dur:22000; loop:true" class="planet-orbit">
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:3.2; radiusOuter:3.21" material="color:#888; opacity:0.3"></a-entity>
+      <a-entity animation="property:rotation; to:0 360 0; dur:22000; loop:true" class="planet-orbit">
         <a-entity position="3.2 0 0">
           <a-sphere id="earth" class="clickable planet" radius="0.18" src="textures/earth.jpg"
                     data-name="🌍 Earth (โลก)"
@@ -272,7 +269,6 @@
             <a-animation attribute="rotation" to="0 360 0" dur="10000" repeat="indefinite"></a-animation>
           </a-sphere>
           <a-text class="planet-label" value="Earth" align="center" position="0 0.25 0" scale="0.4 0.4 0.4" color="#fff"></a-text>
-
           <a-entity id="moon-orbit" animation="property:rotation; to:0 360 0; dur:3000; loop:true">
             <a-sphere radius="0.05" position="0.3 0 0" class="clickable" src="textures/moon.jpg"
                       data-name="🌙 Moon (ดวงจันทร์)"
@@ -282,11 +278,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- Mars -->
     <a-entity id="orbit-mars" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:4.1; radiusOuter:4.11"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:4.1; radiusOuter:4.11" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:32000; loop:true" class="planet-orbit">
         <a-entity position="4.1 0 0">
           <a-sphere radius="0.12" class="clickable planet" src="textures/mars.jpg"
@@ -299,11 +292,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- Jupiter -->
     <a-entity id="orbit-jupiter" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:5.6; radiusOuter:5.61"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:5.6; radiusOuter:5.61" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:44000; loop:true" class="planet-orbit">
         <a-entity position="5.6 0 0">
           <a-sphere radius="0.5" class="clickable planet" src="textures/jupiter.jpg"
@@ -316,11 +306,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- Saturn -->
     <a-entity id="orbit-saturn" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:7.0; radiusOuter:7.01"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:7.0; radiusOuter:7.01" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:56000; loop:true" class="planet-orbit">
         <a-entity position="7 0 0">
           <a-sphere radius="0.42" class="clickable planet" src="textures/saturn.jpg"
@@ -329,18 +316,13 @@
             <a-animation attribute="rotation" to="0 360 0" dur="4500" repeat="indefinite"></a-animation>
           </a-sphere>
           <a-text class="planet-label" value="Saturn" align="center" position="0 0.55 0" scale="0.45 0.45 0.45" color="#fff"></a-text>
-
-          <a-ring src="textures/saturn_ring.jpg" rotation="90 0 0" radius-inner="0.55" radius-outer="0.9"
-                  material="opacity:0.9; transparent: true; side: double"></a-ring>
+          <a-ring src="textures/saturn_ring.jpg" rotation="90 0 0" radius-inner="0.55" radius-outer="0.9" material="opacity:0.9; transparent: true; side: double"></a-ring>
         </a-entity>
       </a-entity>
     </a-entity>
 
-    <!-- Uranus -->
     <a-entity id="orbit-uranus" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:8.6; radiusOuter:8.61"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:8.6; radiusOuter:8.61" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:68000; loop:true" class="planet-orbit">
         <a-entity position="8.6 0 0">
           <a-sphere radius="0.3" class="clickable planet" src="textures/uranus.jpg"
@@ -353,11 +335,8 @@
       </a-entity>
     </a-entity>
 
-    <!-- Neptune -->
     <a-entity id="orbit-neptune" class="orbit-ring">
-      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:10; radiusOuter:10.01"
-                material="color:#888; opacity:0.3"></a-entity>
-
+      <a-entity rotation="-90 0 0" geometry="primitive:ring; radiusInner:10; radiusOuter:10.01" material="color:#888; opacity:0.3"></a-entity>
       <a-entity animation="property:rotation; to:0 360 0; dur:82000; loop:true" class="planet-orbit">
         <a-entity position="10 0 0">
           <a-sphere radius="0.32" class="clickable planet" src="textures/neptune.jpg"
@@ -373,12 +352,18 @@
   </a-scene>
 
   <script>
-    // ซ่อน title หลัง 3 วินาที
-    setTimeout(() => {
-      document.getElementById('titleOverlay').classList.add('hidden');
-    }, 3000);
+    // === ส่วนจัดการ Logic เดิม ===
+    
+    // ซ่อน title
+    setTimeout(() => { document.getElementById('titleOverlay').classList.add('hidden'); }, 3000);
 
-    // สร้างดาวเล็กๆ พราวพราว
+    // ปุ่มกดเข้า AR
+    document.getElementById('arButton').addEventListener('click', function() {
+      const scene = document.querySelector('a-scene');
+      scene.enterAR(); // บังคับเข้า AR เท่านั้น
+    });
+
+    // สร้างดาว
     const starsEl = document.getElementById('stars');
     for (let i = 0; i < 200; i++) {
       const star = document.createElement('a-sphere');
@@ -386,154 +371,86 @@
       const y = (Math.random() - 0.5) * 100;
       const z = (Math.random() - 0.5) * 100;
       const radius = Math.random() * 0.05 + 0.02;
-      
       star.setAttribute('position', `${x} ${y} ${z}`);
       star.setAttribute('radius', radius);
       star.setAttribute('color', '#fff');
       star.setAttribute('material', 'shader: flat');
-      
-      // สุ่มการกระพริบ
       const dur = Math.random() * 3000 + 2000;
       star.setAttribute('animation', `property: material.opacity; from: 0.3; to: 1; dur: ${dur}; dir: alternate; loop: true`);
-      
       starsEl.appendChild(star);
     }
 
-    // ระบบคลิกดาว
+    // คลิกดาว
     document.querySelectorAll('.clickable').forEach(obj => {
       obj.addEventListener('click', () => {
         document.getElementById('infoTitle').innerText = obj.dataset.name;
         document.getElementById('infoText').innerText = obj.dataset.info;
         document.getElementById('infoPanel').style.display = 'block';
       });
-      
-      // เพิ่ม hover effect
-      obj.addEventListener('mouseenter', () => {
-        obj.setAttribute('scale', '1.2 1.2 1.2');
-      });
-      
-      obj.addEventListener('mouseleave', () => {
-        obj.setAttribute('scale', '1 1 1');
-      });
+      obj.addEventListener('mouseenter', () => { obj.setAttribute('scale', '1.2 1.2 1.2'); });
+      obj.addEventListener('mouseleave', () => { obj.setAttribute('scale', '1 1 1'); });
     });
 
-    document.getElementById('closeInfo').onclick = () => {
-      document.getElementById('infoPanel').style.display = 'none';
-    };
+    document.getElementById('closeInfo').onclick = () => { document.getElementById('infoPanel').style.display = 'none'; };
 
-    // ควบคุมแสดง/ซ่อนวงโคจร
+    // Toggle Orbits
     let orbitsVisible = true;
     document.getElementById('toggleOrbits').onclick = () => {
       orbitsVisible = !orbitsVisible;
-      document.querySelectorAll('.orbit-ring').forEach(ring => {
-        ring.setAttribute('visible', orbitsVisible);
-      });
+      document.querySelectorAll('.orbit-ring').forEach(ring => { ring.setAttribute('visible', orbitsVisible); });
     };
 
-    // ควบคุมแสดง/ซ่อนป้ายชื่อ
+    // Toggle Labels
     let labelsVisible = true;
     document.getElementById('toggleLabels').onclick = () => {
       labelsVisible = !labelsVisible;
-      document.querySelectorAll('.planet-label').forEach(label => {
-        label.setAttribute('visible', labelsVisible);
-      });
+      document.querySelectorAll('.planet-label').forEach(label => { label.setAttribute('visible', labelsVisible); });
     };
 
-    // ควบคุมความเร็ว
+    // Speed
     const speedSlider = document.getElementById('speedSlider');
     const speedValue = document.getElementById('speedValue');
-    
     speedSlider.addEventListener('input', (e) => {
       const speed = parseFloat(e.target.value);
       speedValue.textContent = speed.toFixed(1) + 'x';
-      
-      // อัพเดทความเร็วทุก animation
       document.querySelectorAll('.planet-orbit').forEach((orbit, index) => {
         const baseDurations = [8000, 14000, 22000, 32000, 44000, 56000, 68000, 82000];
-        const newDur = baseDurations[index] / speed;
-        const anim = orbit.getAttribute('animation');
-        orbit.setAttribute('animation', `property:rotation; to:0 360 0; dur:${newDur}; loop:true`);
+        if (speed > 0) {
+            const newDur = baseDurations[index] / speed;
+            orbit.setAttribute('animation', `property:rotation; to:0 360 0; dur:${newDur}; loop:true`);
+        } else {
+            orbit.removeAttribute('animation'); // หยุดหมุนถ้า 0
+        }
       });
     });
 
-    // ควบคุม sky ตอน AR - ปรับปรุงใหม่
-    const scene = document.querySelector("a-scene");
-    const sky = document.getElementById("sky");
-    const sceneEl = document.querySelector('a-scene');
-
-    // สร้าง component สำหรับจัดการ AR mode
-    AFRAME.registerComponent('ar-mode-handler', {
-      init: function() {
-        const skyEl = document.getElementById('sky');
-        const sceneEl = this.el;
-        
-        this.el.addEventListener('enter-vr', () => {
-          // ตรวจสอบว่าเป็น AR หรือ VR
-          if (this.el.is('ar-mode')) {
-            console.log('เข้าโหมด AR - ซ่อน sky');
-            if (skyEl) {
-              skyEl.object3D.visible = false;
-            }
-            // ทำให้ background โปร่งใส
-            sceneEl.renderer.setClearAlpha(0);
-          } else {
-            console.log('เข้าโหมด VR - แสดง sky');
-            if (skyEl) {
-              skyEl.object3D.visible = true;
-            }
-          }
-        });
-
-        this.el.addEventListener('exit-vr', () => {
-          console.log('ออกจากโหมด VR/AR - แสดง sky');
-          if (skyEl) {
-            skyEl.object3D.visible = true;
-          }
-          sceneEl.renderer.setClearAlpha(1);
-        });
-      }
-    });
-
-    // Pinch zoom component
+    // Pinch Zoom
     AFRAME.registerComponent('pinch-zoom', {
-      schema: {
-        min: { default: 2 },
-        max: { default: 20 },
-        speed: { default: 0.015 }
-      },
-
+      schema: { min: { default: 2 }, max: { default: 20 }, speed: { default: 0.015 } },
       init: function () {
         this.initialDistance = 0;
         this.zoom = this.el.object3D.position.z;
-
         const canvas = this.el.sceneEl.canvas;
-
         canvas.addEventListener('touchstart', (e) => {
-          if (e.touches.length == 2) {
-            this.initialDistance = this.getTouchDistance(e.touches);
-          }
+          if (e.touches.length == 2) { this.initialDistance = this.getTouchDistance(e.touches); }
         });
-
         canvas.addEventListener('touchmove', (e) => {
           if (e.touches.length == 2) {
             const newDist = this.getTouchDistance(e.touches);
             const delta = newDist - this.initialDistance;
             this.initialDistance = newDist;
-
             this.zoom -= delta * this.data.speed;
             this.zoom = Math.max(this.data.min, Math.min(this.data.max, this.zoom));
             this.el.object3D.position.z = this.zoom;
           }
         });
       },
-
       getTouchDistance: function (touches) {
         const dx = touches[0].clientX - touches[1].clientX;
         const dy = touches[0].clientY - touches[1].clientY;
         return Math.sqrt(dx * dx + dy * dy);
       }
     });
-
   </script>
 </body>
 </html>
