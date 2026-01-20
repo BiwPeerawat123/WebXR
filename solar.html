@@ -2,40 +2,47 @@
 <html lang="th">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>ระบบสุริยะ (Settings Menu)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ระบบสุริยะ (Fix Focus & Settings)</title>
 
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 
   <style>
     /* === Global Styles === */
-    body { 
-      margin: 0; 
-      font-family: 'Kanit', 'Segoe UI', Tahoma, sans-serif;
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
       overflow: hidden;
       background-color: #000;
+      font-family: 'Kanit', 'Segoe UI', Tahoma, sans-serif;
       touch-action: none; 
     }
-    
+
+    a-scene {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0;
+    }
+
     .a-enter-vr-button { display: none !important; }
 
     /* === UI Overlay === */
     #ui-layer {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; 
+      pointer-events: none;
       z-index: 100;
     }
 
     #ui-layer > * { pointer-events: auto; }
 
-    /* === Gear Button (Settings) === */
+    /* === Gear Button === */
     #settingsBtn {
       position: absolute;
-      top: 20px; 
-      right: 20px;
-      width: 48px; 
-      height: 48px;
+      top: 20px; right: 20px;
+      width: 48px; height: 48px;
       border-radius: 50%;
       background: rgba(30, 30, 40, 0.8);
       backdrop-filter: blur(8px);
@@ -43,9 +50,7 @@
       color: white;
       font-size: 24px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       transition: all 0.3s ease;
       z-index: 200;
@@ -56,208 +61,162 @@
       transform: rotate(90deg);
     }
 
-    /* === Settings Menu (Dropdown) === */
+    /* === Settings Menu === */
     #settingsMenu {
       position: absolute;
-      top: 80px; 
-      right: 20px;
-      width: 220px;
+      top: 80px; right: 20px;
+      width: 240px; /* ขยายความกว้างนิดหน่อย */
       background: rgba(20, 20, 35, 0.95);
       backdrop-filter: blur(12px);
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.15);
       padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      display: flex; flex-direction: column; gap: 12px;
       transform-origin: top right;
       transform: scale(0);
       opacity: 0;
       transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       visibility: hidden;
     }
-
     #settingsMenu.active {
-      transform: scale(1);
-      opacity: 1;
-      visibility: visible;
+      transform: scale(1); opacity: 1; visibility: visible;
     }
-
     .menu-item {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      color: #ddd;
-      font-size: 14px;
+      display: flex; flex-direction: column; gap: 6px;
+      color: #ddd; font-size: 14px;
     }
-
     .toggle-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
     }
 
-    /* Toggle Switch Style */
+    /* Switch Style */
     .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
+      position: relative; display: inline-block; width: 44px; height: 24px;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #555;
-      transition: .4s;
-      border-radius: 24px;
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #555; transition: .4s; border-radius: 24px;
     }
     .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
+      position: absolute; content: ""; height: 18px; width: 18px;
+      left: 3px; bottom: 3px; background-color: white;
+      transition: .4s; border-radius: 50%;
     }
     input:checked + .slider { background-color: #bb86fc; }
     input:checked + .slider:before { transform: translateX(20px); }
-
-    /* Custom Range Slider */
     input[type=range] {
-      width: 100%;
-      accent-color: #bb86fc;
-      height: 4px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 2px;
+      width: 100%; accent-color: #bb86fc; height: 4px;
+      background: rgba(255,255,255,0.2); border-radius: 2px;
     }
 
-    /* === Info Panel === */
-    #infoPanel {
+    /* === Preview Overlay (MODIFIED) === */
+    #previewOverlay {
       position: absolute;
-      top: 20px; left: 20px;
-      width: calc(100% - 100px); /* เว้นที่ให้ปุ่ม setting */
-      max-width: 300px;
-      background: rgba(20, 20, 35, 0.9);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      padding: 20px;
-      color: white;
-      transform: translateY(-20px);
-      opacity: 0;
-      transition: all 0.3s ease;
+      top: 0; left: 0; width: 100%; height: 100%;
+      
+      /* --- แก้ไขตรงนี้ (เอา Blur ออก / ใช้ Gradient แทน) --- */
+      /* เดิม: background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); */
+      
+      /* ใหม่: ตรงกลางใส (เห็นดาวชัด) ขอบๆ มืด (อ่านตัวหนังสือชัด) */
+      background: radial-gradient(circle at center, rgba(0,0,0,0) 20%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.95) 100%);
+      
       display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      z-index: 300;
+      pointer-events: auto;
+    }
+    
+    #previewOverlay.active { display: flex; }
+
+    .preview-controls {
+      margin-bottom: 50px;
+      text-align: center;
+      pointer-events: auto;
+      width: 100%;
+      padding: 0 20px;
+      box-sizing: border-box;
     }
 
-    #infoPanel.active {
-      display: block;
-      transform: translateY(0);
-      opacity: 1;
+    #previewTitle {
+      color: #fff;
+      font-size: 2.2rem;
+      font-weight: bold;
+      text-shadow: 0 2px 10px rgba(187, 134, 252, 0.8); /* เพิ่มเงาให้ตัวหนังสือเด้ง */
+      margin-bottom: 10px;
     }
 
-    #infoPanel h3 {
-      margin: 0 0 8px 0;
-      font-size: 1.2rem;
-      color: #bb86fc;
-      border-bottom: 1px solid rgba(255,255,255,0.2);
-      padding-bottom: 8px;
-    }
-
-    #infoPanel p {
-      margin: 0 0 16px 0;
-      font-size: 0.95rem;
+    #previewDesc {
+      color: #ccc;
+      margin-bottom: 20px;
+      max-width: 600px;
+      margin-left: auto; margin-right: auto;
+      font-size: 1rem;
       line-height: 1.5;
-      color: #e0e0e0;
+      background: rgba(0, 0, 0, 0.3); /* พื้นหลังจางๆ เฉพาะตัวหนังสือ */
+      padding: 10px 20px;
+      border-radius: 12px;
+      /* backdrop-filter: blur(4px); สามารถใส่เบลอเฉพาะตรงนี้ได้ถ้าต้องการ */
     }
 
-    #closeInfo {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 8px;
-      width: 100%;
+    #closePreviewBtn {
+      background: linear-gradient(135deg, #ff4b1f, #ff9068);
+      color: white; border: none; padding: 12px 30px;
+      border-radius: 30px; font-size: 16px; font-weight: bold;
+      box-shadow: 0 4px 15px rgba(255, 75, 31, 0.4);
       cursor: pointer;
-      font-weight: 600;
     }
 
-    /* === AR Button (Bottom Center) === */
+    /* Bottom AR Button */
     .bottom-cta {
-      position: absolute;
-      bottom: 30px; 
-      left: 0; 
-      width: 100%;
-      display: flex;
-      justify-content: center;
+      position: absolute; bottom: 30px; left: 0; width: 100%;
+      display: flex; justify-content: center;
       padding-bottom: env(safe-area-inset-bottom);
     }
-
     #arButton {
       background: linear-gradient(135deg, #ff0080, #7928ca);
-      color: white;
-      border: none;
-      padding: 14px 40px;
-      border-radius: 30px;
-      font-size: 16px;
-      font-weight: bold;
+      color: white; border: none; padding: 14px 40px;
+      border-radius: 30px; font-size: 16px; font-weight: bold;
       box-shadow: 0 4px 20px rgba(255, 0, 128, 0.4);
     }
   </style>
 
   <script>
-    // === Component: Zoom Manager ===
+    // Component: Zoom
     AFRAME.registerComponent('ar-scale-manager', {
       schema: { min: {default: 0.05}, max: {default: 10} },
       init: function() {
         this.wrapper = document.getElementById('solar-system-wrapper');
-        this.initialDist = 0;
-        this.initialScale = 1;
-        this.isPinching = false;
-
+        this.initialDist = 0; this.initialScale = 1; this.isPinching = false;
         window.addEventListener('touchstart', (e) => {
           if (e.touches.length === 2) {
             this.isPinching = true;
-            this.initialDist = Math.hypot(
-              e.touches[0].pageX - e.touches[1].pageX,
-              e.touches[0].pageY - e.touches[1].pageY
-            );
+            this.initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             this.initialScale = this.wrapper.object3D.scale.x;
           }
         }, {passive: false});
-
         window.addEventListener('touchmove', (e) => {
           if (this.isPinching && e.touches.length === 2) {
             e.preventDefault();
-            const currentDist = Math.hypot(
-              e.touches[0].pageX - e.touches[1].pageX,
-              e.touches[0].pageY - e.touches[1].pageY
-            );
-            const factor = currentDist / this.initialDist;
-            let newScale = this.initialScale * factor;
+            const currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            let newScale = this.initialScale * (currentDist / this.initialDist);
             newScale = Math.min(Math.max(newScale, this.data.min), this.data.max);
             this.wrapper.setAttribute('scale', `${newScale} ${newScale} ${newScale}`);
           }
         }, {passive: false});
-
-        window.addEventListener('touchend', () => {
-          this.isPinching = false;
-        });
+        window.addEventListener('touchend', () => { this.isPinching = false; });
       }
     });
 
-    // === Component: AR Controller ===
+    // Component: AR Controller
     AFRAME.registerComponent('ar-controller', {
       init: function () {
         const sceneEl = this.el;
         const sky = document.getElementById('sky');
         const arBtn = document.getElementById('arButton');
         const wrapper = document.getElementById('solar-system-wrapper');
-
         sceneEl.addEventListener('enter-vr', () => {
           if (sceneEl.is('ar-mode')) {
             if(sky) sky.setAttribute('visible', false);
@@ -266,7 +225,6 @@
             wrapper.setAttribute('scale', '0.2 0.2 0.2');
           }
         });
-
         sceneEl.addEventListener('exit-vr', () => {
           if(sky) sky.setAttribute('visible', true);
           if(arBtn) arBtn.style.display = 'block';
@@ -285,7 +243,6 @@
     <button id="settingsBtn">⚙️</button>
 
     <div id="settingsMenu">
-      
       <div class="menu-item toggle-row">
         <span>แสดงวงโคจร</span>
         <label class="switch">
@@ -293,7 +250,6 @@
           <span class="slider"></span>
         </label>
       </div>
-
       <div class="menu-item toggle-row">
         <span>แสดงชื่อดาว</span>
         <label class="switch">
@@ -301,9 +257,16 @@
           <span class="slider"></span>
         </label>
       </div>
+      
+      <div class="menu-item toggle-row">
+        <span>แสดงคำบรรยาย</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleDesc" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
 
       <hr style="width: 100%; border: 0; border-top: 1px solid rgba(255,255,255,0.1);">
-
       <div class="menu-item">
         <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
           <span>ความเร็วการหมุน</span>
@@ -311,13 +274,15 @@
         </div>
         <input type="range" id="speedSlider" min="0" max="5" step="0.5" value="1">
       </div>
-
     </div>
 
-    <div id="infoPanel">
-      <h3 id="infoTitle">ชื่อดาว</h3>
-      <p id="infoText">รายละเอียด...</p>
-      <button id="closeInfo">ปิดหน้าต่าง</button>
+    <div id="previewOverlay">
+      <div class="preview-controls">
+        <h2 id="previewTitle">ดาว...</h2>
+        <p id="previewDesc">รายละเอียด...</p>
+        <p style="font-size:0.8rem; color:#888; margin-top:-10px; margin-bottom:15px;">(ใช้นิ้วเลื่อนเพื่อหมุนดาว)</p>
+        <button id="closePreviewBtn">ปิดหน้าต่าง</button>
+      </div>
     </div>
 
     <div class="bottom-cta">
@@ -332,7 +297,7 @@
     ar-scale-manager
     cursor="rayOrigin: mouse; fuse: false" 
     raycaster="objects: .clickable"
-    renderer="colorManagement: true; antialias: true; alpha: true; precision: medium"
+    renderer="colorManagement: true; antialias: true; alpha: true; precision: high"
     webxr="optionalFeatures: dom-overlay; overlayElement: #ui-layer">
 
     <a-assets>
@@ -345,15 +310,21 @@
     <a-entity light="type: point; intensity: 1.5; distance: 50; decay: 2" position="0 0 0"></a-entity>
 
     <a-entity id="cameraRig" position="0 1.6 8">
-      <a-entity camera look-controls wasd-controls></a-entity>
+      <a-entity camera look-controls wasd-controls>
+        <a-entity id="preview-rig" visible="false" position="0 0 -2.5">
+          <a-entity light="type: directional; intensity: 2; color: #fff" position="1 1 2"></a-entity>
+          <a-sphere id="preview-planet-mesh" radius="0.6" 
+                    animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear; enabled: false">
+          </a-sphere>
+        </a-entity>
+      </a-entity>
     </a-entity>
 
     <a-entity id="solar-system-wrapper">
       
       <a-entity id="sun-parent" position="0 0 0">
-        <a-sphere id="sun" radius="1.2" src="textures/sun.jpg" color="#FDB813"
-                segments-width="32" segments-height="32"
-                material="shader: flat; emissive: #FDB813; emissiveIntensity: 0.6"></a-sphere>
+        <a-sphere id="sun" radius="1.2" src="textures/sun.jpg" color="#FDB813" class="clickable planet-mesh"
+                  data-name="Sun (ดวงอาทิตย์)" data-info="ศูนย์กลางของระบบสุริยะ แหล่งพลังงานที่สำคัญที่สุดของโลก"></a-sphere>
         <a-sphere radius="1.4" color="#FDB813" opacity="0.3" transparent="true" segments-width="16" segments-height="16" material="side: back"></a-sphere>
       </a-entity>
 
@@ -363,91 +334,71 @@
           <a-entity position="1.6 0 0">
             <a-sphere class="clickable" radius="0.3" visible="false"></a-sphere> 
             <a-sphere class="planet-mesh" radius="0.08" src="textures/mercury.jpg" color="#A5A5A5"
-                      segments-width="16" segments-height="16"
-                      data-name="Mercury (ดาวพุธ)"
-                      data-info="ดาวเคราะห์จิ๋วใกล้ดวงอาทิตย์ที่สุด ร้อนจัดในตอนกลางวันและหนาวจัดในตอนกลางคืน">
-            </a-sphere>
+                      data-name="Mercury (ดาวพุธ)" data-info="ดาวเคราะห์ที่เล็กที่สุดและอยู่ใกล้ดวงอาทิตย์ที่สุด ร้อนจัดและเย็นจัด"></a-sphere>
             <a-text class="planet-label" value="Mercury" align="center" position="0 0.25 0" scale="0.5 0.5 0.5" side="double"></a-text>
           </a-entity>
         </a-entity>
       </a-entity>
 
       <a-entity id="orbit-venus" class="orbit-ring">
-        <a-ring rotation="-90 0 0" radius-inner="2.29" radius-outer="2.30" color="#ffffff" opacity="0.2" segments-theta="32"></a-ring>
+        <a-ring rotation="-90 0 0" radius-inner="2.29" radius-outer="2.30" color="#ffffff" opacity="0.2"></a-ring>
         <a-entity animation="property:rotation; to:0 360 0; dur:12000; loop:true; easing:linear" class="planet-orbit">
           <a-entity position="2.3 0 0">
             <a-sphere class="clickable" radius="0.4" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.14" src="textures/venus.jpg" color="#E3BB76"
-                      segments-width="32" segments-height="32"
-                      data-name="Venus (ดาวศุกร์)"
-                      data-info="ฝาแฝดของโลกที่ร้อนระอุ ปกคลุมด้วยเมฆหนาทึบและแก๊สเรือนกระจก">
-            </a-sphere>
+                      data-name="Venus (ดาวศุกร์)" data-info="ฝาแฝดของโลก ปกคลุมด้วยแก๊สเรือนกระจกหนาแน่น ทำให้ร้อนที่สุดในระบบสุริยะ"></a-sphere>
             <a-text class="planet-label" value="Venus" align="center" position="0 0.35 0" scale="0.6 0.6 0.6" side="double"></a-text>
           </a-entity>
         </a-entity>
       </a-entity>
 
       <a-entity id="orbit-earth" class="orbit-ring">
-        <a-ring rotation="-90 0 0" radius-inner="3.19" radius-outer="3.20" color="#ffffff" opacity="0.2" segments-theta="32"></a-ring>
+        <a-ring rotation="-90 0 0" radius-inner="3.19" radius-outer="3.20" color="#ffffff" opacity="0.2"></a-ring>
         <a-entity animation="property:rotation; to:0 360 0; dur:18000; loop:true; easing:linear" class="planet-orbit">
           <a-entity position="3.2 0 0">
             <a-sphere class="clickable" radius="0.5" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.18" src="textures/earth.jpg" color="#4B9CD3"
-                      segments-width="32" segments-height="32"
-                      data-name="Earth (โลก)"
-                      data-info="บ้านของเรา ดาวเคราะห์เพียงดวงเดียวที่เรารู้ว่ามีสิ่งมีชีวิตอาศัยอยู่ได้">
-            </a-sphere>
+                      data-name="Earth (โลก)" data-info="ดาวเคราะห์สีน้ำเงิน ดาวดวงเดียวที่มีสิ่งมีชีวิตและน้ำในสถานะของเหลว"></a-sphere>
             <a-text class="planet-label" value="Earth" align="center" position="0 0.45 0" scale="0.6 0.6 0.6" side="double"></a-text>
-            
             <a-entity animation="property:rotation; to:0 360 0; dur:3000; loop:true; easing:linear">
-               <a-sphere radius="0.05" position="0.3 0 0" src="textures/moon.jpg" color="#ddd" segments-width="8" segments-height="8"></a-sphere>
+               <a-sphere radius="0.05" position="0.3 0 0" src="textures/moon.jpg" color="#ddd"></a-sphere>
             </a-entity>
-
           </a-entity>
         </a-entity>
       </a-entity>
 
       <a-entity id="orbit-mars" class="orbit-ring">
-        <a-ring rotation="-90 0 0" radius-inner="4.09" radius-outer="4.10" color="#ffffff" opacity="0.2" segments-theta="32"></a-ring>
+        <a-ring rotation="-90 0 0" radius-inner="4.09" radius-outer="4.10" color="#ffffff" opacity="0.2"></a-ring>
         <a-entity animation="property:rotation; to:0 360 0; dur:24000; loop:true; easing:linear" class="planet-orbit">
           <a-entity position="4.1 0 0">
             <a-sphere class="clickable" radius="0.4" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.12" src="textures/mars.jpg" color="#E27B58"
-                      segments-width="16" segments-height="16"
-                      data-name="Mars (ดาวอังคาร)"
-                      data-info="ดาวแดงที่มีพายุฝุ่นปกคลุม และเป็นเป้าหมายต่อไปในการสำรวจของมนุษย์">
-            </a-sphere>
+                      data-name="Mars (ดาวอังคาร)" data-info="ดาวแดง เต็มไปด้วยพายุฝุ่นและภูเขาไฟที่สูงที่สุดในระบบสุริยะ"></a-sphere>
             <a-text class="planet-label" value="Mars" align="center" position="0 0.35 0" scale="0.6 0.6 0.6" side="double"></a-text>
           </a-entity>
         </a-entity>
       </a-entity>
 
       <a-entity id="orbit-jupiter" class="orbit-ring">
-        <a-ring rotation="-90 0 0" radius-inner="5.99" radius-outer="6.00" color="#ffffff" opacity="0.2" segments-theta="64"></a-ring>
+        <a-ring rotation="-90 0 0" radius-inner="5.99" radius-outer="6.00" color="#ffffff" opacity="0.2"></a-ring>
         <a-entity animation="property:rotation; to:0 360 0; dur:38000; loop:true; easing:linear" class="planet-orbit">
           <a-entity position="6.0 0 0">
             <a-sphere class="clickable" radius="0.8" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.5" src="textures/jupiter.jpg" color="#C88B3A"
-                      segments-width="32" segments-height="32"
-                      data-name="Jupiter (ดาวพฤหัส)"
-                      data-info="พี่ใหญ่แห่งระบบสุริยะ เป็นดาวแก๊สยักษ์ที่มีพายุหมุนแดงใหญ่ (Great Red Spot)">
-            </a-sphere>
+                      data-name="Jupiter (ดาวพฤหัส)" data-info="พี่ใหญ่แห่งระบบสุริยะ ดาวแก๊สยักษ์ที่มีพายุหมุนแดงใหญ่ (Great Red Spot)"></a-sphere>
             <a-text class="planet-label" value="Jupiter" align="center" position="0 0.9 0" scale="1 1 1" side="double"></a-text>
           </a-entity>
         </a-entity>
       </a-entity>
 
       <a-entity id="orbit-saturn" class="orbit-ring">
-        <a-ring rotation="-90 0 0" radius-inner="7.99" radius-outer="8.00" color="#ffffff" opacity="0.2" segments-theta="64"></a-ring>
+        <a-ring rotation="-90 0 0" radius-inner="7.99" radius-outer="8.00" color="#ffffff" opacity="0.2"></a-ring>
         <a-entity animation="property:rotation; to:0 360 0; dur:48000; loop:true; easing:linear" class="planet-orbit">
           <a-entity position="8.0 0 0">
             <a-sphere class="clickable" radius="0.8" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.45" src="textures/saturn.jpg" color="#C5AB6E"
-                      segments-width="32" segments-height="32"
-                      data-name="Saturn (ดาวเสาร์)"
-                      data-info="ราชินีแห่งวงแหวน มีวงแหวนน้ำแข็งที่สวยงามและชัดเจนที่สุด">
-            </a-sphere>
-            <a-ring rotation="90 0 0" radius-inner="0.6" radius-outer="1.0" color="#C5AB6E" opacity="0.8" side="double" segments-theta="32"></a-ring>
+                      data-name="Saturn (ดาวเสาร์)" data-info="โดดเด่นด้วยวงแหวนน้ำแข็งที่สวยงาม เป็นดาวเคราะห์ที่มีความหนาแน่นน้อยกว่าน้ำ"></a-sphere>
+            <a-ring rotation="90 0 0" radius-inner="0.6" radius-outer="1.0" color="#C5AB6E" opacity="0.8" side="double"></a-ring>
             <a-text class="planet-label" value="Saturn" align="center" position="0 0.8 0" scale="0.9 0.9 0.9" side="double"></a-text>
           </a-entity>
         </a-entity>
@@ -459,10 +410,8 @@
           <a-entity position="9.5 0 0">
             <a-sphere class="clickable" radius="0.6" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.3" src="textures/uranus.jpg" color="#4FD0E7"
-                      segments-width="32" segments-height="32"
                       data-name="Uranus (ดาวยูเรนัส)"
-                      data-info="ดาวมฤตยูที่หมุนตะแคงข้าง มีบรรยากาศสีฟ้าอมเขียวจากแก๊สมีเทน">
-            </a-sphere>
+                      data-info="ดาวมฤตยู หมุนรอบตัวเองแบบตะแคงข้าง มีบรรยากาศสีฟ้าอมเขียวจากมีเทน"></a-sphere>
             <a-text class="planet-label" value="Uranus" align="center" position="0 0.6 0" scale="0.8 0.8 0.8" side="double"></a-text>
           </a-entity>
         </a-entity>
@@ -474,14 +423,13 @@
           <a-entity position="11.0 0 0">
             <a-sphere class="clickable" radius="0.6" visible="false"></a-sphere>
             <a-sphere class="planet-mesh" radius="0.3" src="textures/neptune.jpg" color="#29559B"
-                      segments-width="32" segments-height="32"
                       data-name="Neptune (ดาวเนปจูน)"
-                      data-info="ดาวเกตุที่อยู่ไกลสุด มีลมพายุรุนแรงที่สุดในระบบสุริยะ สีน้ำเงินเข้ม">
-            </a-sphere>
+                      data-info="ดาวเกตุ อยู่ไกลสุด มีลมพายุรุนแรงและหนาวเย็นจัด สีน้ำเงินเข้ม"></a-sphere>
             <a-text class="planet-label" value="Neptune" align="center" position="0 0.6 0" scale="0.8 0.8 0.8" side="double"></a-text>
           </a-entity>
         </a-entity>
       </a-entity>
+
     </a-entity> 
   </a-scene>
 
@@ -493,18 +441,15 @@
       scene.enterAR();
     });
 
-    // Toggle Settings Menu
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsMenu = document.getElementById('settingsMenu');
 
     settingsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       settingsMenu.classList.toggle('active');
-      // หมุนปุ่ม Settings เล็กน้อยเมื่อกด
       settingsBtn.style.transform = settingsMenu.classList.contains('active') ? 'rotate(90deg)' : 'rotate(0deg)';
     });
 
-    // Close Menu when clicking outside
     document.addEventListener('click', (e) => {
       if (!settingsMenu.contains(e.target) && e.target !== settingsBtn) {
         settingsMenu.classList.remove('active');
@@ -512,38 +457,73 @@
       }
     });
 
-    // Info Panel Logic
-    const infoPanel = document.getElementById('infoPanel');
-    const infoTitle = document.getElementById('infoTitle');
-    const infoText = document.getElementById('infoText');
+    // === Preview Logic ===
+    const previewOverlay = document.getElementById('previewOverlay');
+    const previewRig = document.getElementById('preview-rig');
+    const previewMesh = document.getElementById('preview-planet-mesh');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDesc = document.getElementById('previewDesc');
+    const solarSystem = document.getElementById('solar-system-wrapper');
 
+    let isPreviewing = false;
+    let startX = 0;
+    
+    // Checkbox: Toggle Description
+    const toggleDesc = document.getElementById('toggleDesc');
+    toggleDesc.addEventListener('change', function() {
+      const show = this.checked;
+      previewDesc.style.display = show ? 'block' : 'none';
+    });
+
+    // Click Planet
     document.querySelectorAll('.clickable').forEach(el => {
       el.addEventListener('click', function(evt) {
-        const planetMesh = this.parentElement.querySelector('.planet-mesh');
+        const planetMesh = this.parentElement.querySelector('.planet-mesh') || this;
         if (!planetMesh) return;
 
-        infoTitle.innerText = planetMesh.getAttribute('data-name');
-        infoText.innerText = planetMesh.getAttribute('data-info');
-        
-        infoPanel.style.display = 'block';
-        requestAnimationFrame(() => infoPanel.classList.add('active'));
-        
-        const originalScale = planetMesh.object3D.scale.clone();
-        planetMesh.object3D.scale.multiplyScalar(1.3);
-        setTimeout(() => {
-          planetMesh.object3D.scale.copy(originalScale);
-        }, 200);
+        const textureSrc = planetMesh.getAttribute('src');
+        const color = planetMesh.getAttribute('color');
+        const name = planetMesh.getAttribute('data-name');
+        const info = planetMesh.getAttribute('data-info');
+
+        previewMesh.setAttribute('src', textureSrc);
+        previewMesh.setAttribute('color', color);
+        previewTitle.innerText = name;
+        previewDesc.innerText = info;
+
+        // Apply toggle state immediately
+        previewDesc.style.display = toggleDesc.checked ? 'block' : 'none';
+
+        previewOverlay.classList.add('active');
+        previewRig.setAttribute('visible', true);
+        solarSystem.setAttribute('visible', false);
+        isPreviewing = true;
       });
     });
 
-    document.getElementById('closeInfo').addEventListener('click', () => {
-      infoPanel.classList.remove('active');
-      setTimeout(() => { infoPanel.style.display = 'none'; }, 300);
+    // Close Preview
+    document.getElementById('closePreviewBtn').addEventListener('click', () => {
+      previewOverlay.classList.remove('active');
+      previewRig.setAttribute('visible', false);
+      solarSystem.setAttribute('visible', true);
+      isPreviewing = false;
+    });
+
+    // Drag to Rotate Preview
+    document.addEventListener('touchstart', (e) => {
+      if(isPreviewing) startX = e.touches[0].pageX;
+    });
+    document.addEventListener('touchmove', (e) => {
+      if(isPreviewing && e.touches.length === 1) { 
+        const currentX = e.touches[0].pageX;
+        const deltaX = currentX - startX;
+        previewMesh.object3D.rotation.y += deltaX * 0.01;
+        startX = currentX;
+      }
     });
 
     // Toggle Orbits
-    const toggleOrbits = document.getElementById('toggleOrbits');
-    toggleOrbits.addEventListener('change', function() {
+    document.getElementById('toggleOrbits').addEventListener('change', function() {
       const visible = this.checked;
       document.querySelectorAll('.orbit-ring').forEach(ring => {
         ring.setAttribute('visible', visible);
@@ -551,8 +531,7 @@
     });
 
     // Toggle Labels
-    const toggleLabels = document.getElementById('toggleLabels');
-    toggleLabels.addEventListener('change', function() {
+    document.getElementById('toggleLabels').addEventListener('change', function() {
       const visible = this.checked;
       document.querySelectorAll('.planet-label').forEach(label => {
         label.setAttribute('visible', visible);
@@ -562,18 +541,15 @@
     // Speed Slider
     const speedSlider = document.getElementById('speedSlider');
     const speedValue = document.getElementById('speedValue');
-    
     speedSlider.addEventListener('input', (e) => {
       const speed = parseFloat(e.target.value);
       speedValue.innerText = speed + "x";
-      
       document.querySelectorAll('.planet-orbit').forEach(orbit => {
         if (!orbit.getAttribute('data-original-dur')) {
           const anim = orbit.getAttribute('animation');
           if(anim) orbit.setAttribute('data-original-dur', anim.dur);
         }
         const originalDur = parseInt(orbit.getAttribute('data-original-dur'));
-        
         if (speed === 0) {
           orbit.removeAttribute('animation');
         } else {
