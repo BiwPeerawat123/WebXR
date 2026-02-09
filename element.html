@@ -271,7 +271,7 @@
             </div>
         </div>
         
-        <!-- ปุ่ม AR -->
+        <!-- ปุ่ม AR แบบ Custom -->
         <button id="arBtn" class="ar-button">
             <span class="ar-icon">🥽</span>
             <span>AR Mode</span>
@@ -323,7 +323,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { ARButton } from 'three/addons/webxr/ARButton.js';
+// ✅ ลบ ARButton ออก - ไม่ import แล้ว
 
 const elementsData = {
     'Ag': { number: 47, name: 'เงิน', modelFile: 'inmeg/silver.glb', category: 'transition', 
@@ -357,12 +357,13 @@ let camera, scene, renderer, controls, loader;
 let currentModel = null;
 let isInfoVisible = false;
 
-// ⭐ AR
+// ⭐ AR Variables
 let controller;
 let reticle;
 let hitTestSource = null;
 let hitTestSourceRequested = false;
 let currentModelPath = null;
+let xrSession = null;
 
 function init() {
     scene = new THREE.Scene();
@@ -370,7 +371,12 @@ function init() {
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 5);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // ✅ ใช้ preserveDrawingBuffer: true สำคัญมากสำหรับ AR
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true,
+        preserveDrawingBuffer: true
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -419,28 +425,56 @@ function init() {
     generateTable();
     window.addEventListener('resize', onWindowResize);
     
-    // ⭐ แก้ปุ่ม AR
-    document.getElementById('arBtn').addEventListener('click', async () => {
-        if (!navigator.xr) {
-            alert('มือถือหรือ browser ไม่รองรับ AR');
-            return;
-        }
-
-        const supported = await navigator.xr.isSessionSupported('immersive-ar');
-
-        if (!supported) {
-            alert('อุปกรณ์นี้ไม่รองรับ AR');
-            return;
-        }
-
-        document.body.appendChild(
-            ARButton.createButton(renderer, {
-                requiredFeatures: ['hit-test']
-            })
-        );
+    // ✅ แก้ปุ่ม AR ให้เปิด Session แบบ A-Frame (ไม่ใช้ ARButton)
+    document.getElementById('arBtn').addEventListener('click', startAR);
+    
+    // ✅ Auto Reset ตอนออก AR (เหมือน A-Frame)
+    renderer.xr.addEventListener('sessionend', () => {
+        reticle.visible = false;
+        hitTestSource = null;
+        hitTestSourceRequested = false;
+        xrSession = null;
+        console.log('AR Session ended - reset complete');
     });
     
     animate();
+}
+
+// ✅ ฟังก์ชันเปิด AR Session แบบ A-Frame
+async function startAR() {
+    if (!navigator.xr) {
+        alert('อุปกรณ์ไม่รองรับ WebXR');
+        return;
+    }
+
+    const supported = await navigator.xr.isSessionSupported('immersive-ar');
+
+    if (!supported) {
+        alert('มือถือเครื่องนี้ใช้ AR ไม่ได้');
+        return;
+    }
+
+    try {
+        // ใช้ dom-overlay เพื่อให้ UI ยังเห็นได้ใน AR
+        const session = await navigator.xr.requestSession('immersive-ar', {
+            requiredFeatures: ['hit-test', 'dom-overlay'],
+            domOverlay: { root: document.body }
+        });
+
+        xrSession = session;
+        
+        renderer.xr.setReferenceSpaceType('local');
+        await renderer.xr.setSession(session);
+        
+        // 🔥 Pro Tip: บอกผู้ใช้ให้ขยับมือถือ (UX ดีขึ้น)
+        setTimeout(() => {
+            alert("ขยับมือถือเพื่อค้นหาพื้นก่อนวางโมเดล");
+        }, 500);
+
+    } catch (err) {
+        console.error('AR Error:', err);
+        alert('เข้า AR ไม่สำเร็จ: ' + err.message);
+    }
 }
 
 function generateTable() {
@@ -483,7 +517,7 @@ function selectElement(symbol) {
     // Show Info Panel
     showInfo();
     
-    // ⭐ จำโมเดลที่เลือก
+    // จำโมเดลที่เลือก
     currentModelPath = data.modelFile;
     
     loadModel(data.modelFile);
@@ -572,18 +606,30 @@ function loadModel(filePath) {
     });
 }
 
-// ⭐ เพิ่มฟังก์ชันวางโมเดล
+// ฟังก์ชันวางโมเดลใน AR
 function placeObject() {
     if (!reticle.visible || !currentModelPath) return;
 
     loader.load(currentModelPath, (gltf) => {
         const model = gltf.scene;
         
+        // ปรับขนาดให้เหมาะกับ AR (เล็กกว่าใน 3D mode)
         model.scale.set(0.3, 0.3, 0.3);
         model.position.setFromMatrixPosition(reticle.matrix);
         model.quaternion.setFromRotationMatrix(reticle.matrix);
         
+        // ทำให้โมเดลวางบนพื้น
+        model.traverse(c => { 
+            if(c.isMesh) { 
+                c.castShadow = true; 
+                c.receiveShadow = true; 
+            }
+        });
+        
         scene.add(model);
+        
+        // เอฟเฟกต์วางโมเดลสำเร็จ (optional)
+        console.log('Model placed at:', model.position);
     });
 }
 
@@ -594,10 +640,8 @@ function onWindowResize() {
 }
 
 function animate() {
-    // ⭐ เปลี่ยนเป็น setAnimationLoop
     renderer.setAnimationLoop(render);
 }
-
 
 function render(timestamp, frame) {
     if (frame) {
