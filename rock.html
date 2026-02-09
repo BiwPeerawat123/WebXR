@@ -9,358 +9,575 @@
         body { 
             margin: 0; 
             overflow: hidden; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            touch-action: none; 
             background-color: #f1f5f9; 
-            background-image: url('models/background1.jpg'); 
+            background-image: url('models/background.jpg'); 
             background-size: cover; 
             background-position: center; 
             background-repeat: no-repeat;
             background-attachment: fixed;
+            touch-action: none; 
+            font-family: 'Kanit', 'Segoe UI', Tahoma, sans-serif; 
         }
         #canvas-container { 
-            width: 100vw; 
-            height: 100vh; 
-            background: transparent;
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 0;
         }
         
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
-        
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-        }
-        
+        /* Rock button styling - ขนาดเล็กลง */
         .rock-btn {
-            transition: all 0.2s ease;
-            font-size: 0.75rem;
-            line-height: 1.1;
-            min-height: 44px;
-            width: 100%;
-            padding: 2px 1px;
-            border: none;
-            outline: none;
+            transition: all 0.1s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 32px;
+            min-width: 32px;
+            padding: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-        .rock-btn:active { transform: scale(0.95); opacity: 0.9; }
+        .rock-btn:active { transform: scale(0.95); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+        .rock-name-th { font-weight: bold; font-size: 0.6rem; line-height: 1.1; color: white; }
+        .rock-name-en { font-size: 0.35rem; opacity: 0.85; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: rgba(255,255,255,0.9); }
         
-        .rock-btn:first-child { border-radius: 8px 0 0 0; }
-        .rock-btn:nth-child(3) { border-radius: 0 8px 0 0; }
-        .rock-btn:nth-child(7) { border-radius: 0 0 0 8px; }
-        .rock-btn:last-child { border-radius: 0 0 8px 0; }
-        
-        #info-panel { display: none; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        
+        /* Category Colors */
         .category-igneous { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
         .category-sedimentary { background: linear-gradient(135deg, #feca57, #ff9f43); }
         .category-metamorphic { background: linear-gradient(135deg, #48dbfb, #0abde3); }
+
+        /* Gray Board - ขนาดเล็กลง */
+        .gray-board {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            padding: 6px;
+            backdrop-filter: blur(8px);
+        }
+        
+        /* Glass UI */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* AR Button - ขนาดเล็กลง */
+        .ar-button {
+            background: linear-gradient(135deg, #ff0080 0%, #7928ca 50%, #ff0080 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 6px 12px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(255, 0, 128, 0.35), 0 0 0 1px rgba(255,255,255,0.3) inset;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: auto;
+        }
+        
+        .ar-button:hover {
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 4px 15px rgba(255, 0, 128, 0.5);
+        }
+        
+        .ar-button:active {
+            transform: translateY(0) scale(0.97);
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .ar-icon {
+            font-size: 12px;
+        }
+        
+        /* Close button - ขนาดเล็กลง */
+        .close-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.08);
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 10px;
+        }
+        
+        .close-btn:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #dc2626;
+            transform: rotate(90deg);
+        }
+        
+        /* Info toggle button - ขนาดเล็กลง */
+        .info-toggle-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+            transition: all 0.3s ease;
+        }
+        
+        .info-toggle-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 3px 12px rgba(59, 130, 246, 0.45);
+        }
         
         .loader {
-            border: 3px solid rgba(0,0,0,0.1);
+            border: 2px solid rgba(0,0,0,0.1);
             border-radius: 50%;
-            border-top: 3px solid #3b82f6;
-            width: 32px; height: 32px;
+            border-top: 2px solid #3b82f6;
+            width: 20px; height: 20px;
             animation: spin 0.8s linear infinite;
-            position: absolute; top: 50%; left: 50%; margin-top: -16px; margin-left: -16px;
-            display: none; z-index: 100;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; z-index: 50;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
         
-        @media (max-width: 640px) {
-            .rock-btn {
-                font-size: 0.6rem;
-                padding: 1px 1px;
-                min-height: 40px;
+        /* Info Panel - ขนาดเล็กลง */
+        .info-panel {
+            position: fixed;
+            top: 50px;
+            right: 6px;
+            width: 130px;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+        
+        .info-panel.hidden-panel {
+            transform: translateX(150px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* สำหรับมือถือขนาดเล็ก */
+        @media (max-width: 380px) {
+            .info-panel {
+                width: 120px;
+                top: 45px;
+                right: 4px;
+            }
+            .info-panel.hidden-panel {
+                transform: translateX(140px);
             }
         }
+        
+        @media (min-width: 641px) {
+            .info-panel {
+                width: 160px;
+                right: 10px;
+                top: 60px;
+            }
+            .info-panel.hidden-panel {
+                transform: translateX(180px);
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .rock-btn { min-height: 28px; min-width: 28px; padding: 1px; }
+            .rock-name-th { font-size: 0.55rem; }
+            .rock-name-en { font-size: 0.3rem; }
+            .gray-board { padding: 4px; border-radius: 8px; }
+            .ar-button { padding: 5px 10px; font-size: 9px; }
+        }
     </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
 <body>
 
-<div id="loader" class="loader"></div>
 <div id="canvas-container"></div>
+<div id="loader" class="loader"></div>
 
-<div class="absolute top-0 left-0 w-full h-full pointer-events-none">
+<!-- UI Layer -->
+<div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
     
-    <!-- Header -->
-    <div class="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex justify-between items-start pointer-events-auto">
-        <div class="glass-panel rounded-xl sm:rounded-2xl p-2 sm:p-3 text-white max-w-[60%]">
-            <h1 class="text-base sm:text-xl font-bold leading-tight">🪨 Rock Collection</h1>
-            <p class="text-[10px] sm:text-xs opacity-80 mt-0.5">เลือกหินเพื่อดูรายละเอียด</p>
+    <!-- Header - ขนาดเล็กลง -->
+    <div class="pointer-events-auto p-2 flex justify-between items-center bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm">
+        <div class="text-slate-800 flex items-center gap-1.5">
+            <span class="text-base">🪨</span>
+            <div>
+                <h1 class="text-xs font-bold leading-none text-slate-900">Rock Collection</h1>
+                <p class="text-[9px] opacity-70 text-slate-600">เลือกหินเพื่อดูโมเดล 3D</p>
+            </div>
         </div>
         
-        <button id="ar-btn" onclick="enterAR()" class="glass-panel rounded-full p-2 sm:p-3 hover:bg-slate-800/90 transition-all pointer-events-auto flex flex-col items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            <span class="text-[8px] sm:text-[10px] text-white mt-0.5">AR</span>
+        <!-- AR Button -->
+        <button id="arBtn" class="ar-button">
+            <span class="ar-icon">🥽</span>
+            <span>AR</span>
         </button>
     </div>
 
-    <!-- ปุ่มชิดกัน gap-0 -->
-    <div class="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 pointer-events-auto">
-        <div class="glass-panel rounded-xl sm:rounded-2xl p-2 max-w-md mx-auto">
-            <div class="grid grid-cols-3 gap-0" id="button-grid">
-                <!-- หินอัคนี -->
-                <button onclick="showRock('granite')" class="rock-btn category-igneous text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">แกรนิต</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Granite</span>
-                </button>
-                <button onclick="showRock('basalt')" class="rock-btn category-igneous text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">บะซอลต์</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Basalt</span>
-                </button>
-                <button onclick="showRock('obsidian')" class="rock-btn category-igneous text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">ออบซิเดียน</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Obsidian</span>
-                </button>
-                
-                <!-- หินตะกอน -->
-                <button onclick="showRock('limestone')" class="rock-btn category-sedimentary text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">หินปูน</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Limestone</span>
-                </button>
-                <button onclick="showRock('sandstone')" class="rock-btn category-sedimentary text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">หินทราย</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Sandstone</span>
-                </button>
-                <button onclick="showRock('shale')" class="rock-btn category-sedimentary text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">ชนวน</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Shale</span>
-                </button>
-                
-                <!-- หินแปร -->
-                <button onclick="showRock('marble')" class="rock-btn category-metamorphic text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">หินอ่อน</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Marble</span>
-                </button>
-                <button onclick="showRock('gneiss')" class="rock-btn category-metamorphic text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">กนีส</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Gneiss</span>
-                </button>
-                <button onclick="showRock('quartzite')" class="rock-btn category-metamorphic text-white font-semibold">
-                    <span class="block text-[10px] sm:text-xs leading-none">ควอตไซต์</span>
-                    <span class="block text-[8px] sm:text-[10px] font-normal opacity-90 mt-0.5 leading-none">Quartzite</span>
+    <!-- Info Panel - ขนาดเล็กลง -->
+    <div id="info-panel" class="info-panel glass-panel rounded-lg p-2 text-slate-800 pointer-events-auto hidden-panel">
+        <div id="info-content">
+            <div class="flex justify-between items-start mb-1">
+                <div>
+                    <h2 id="rock-name" class="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 leading-none"></h2>
+                    <h3 id="rock-thai" class="text-[10px] font-medium text-slate-700 mt-0.5"></h3>
+                </div>
+                <button onclick="toggleInfo()" class="close-btn" title="ปิด">
+                    ✕
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Info Panel -->
-    <div id="info-panel" class="absolute right-2 sm:right-4 top-16 sm:top-20 w-52 sm:w-64 lg:w-72 glass-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white pointer-events-auto max-h-[40vh] sm:max-h-[50vh] overflow-y-auto">
-        <div class="flex justify-between items-start mb-2 sm:mb-3">
-            <h2 id="rock-name" class="text-base sm:text-lg lg:text-xl font-bold leading-tight pr-2">ชื่อหิน</h2>
-            <button onclick="closeInfo()" class="text-white/70 hover:text-white p-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-        
-        <div id="rock-category" class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-2 sm:mb-3 bg-white/20">ประเภท</div>
-        
-        <div class="space-y-2 sm:space-y-3">
-            <div>
-                <h3 class="font-bold text-xs sm:text-sm mb-1">🔬 ลักษณะทางกายภาพ</h3>
-                <p id="rock-desc" class="text-[10px] sm:text-xs leading-relaxed opacity-90">รายละเอียด...</p>
-            </div>
+            <div id="rock-category" class="inline-block px-1.5 py-0.5 rounded-full text-[8px] mb-1 font-medium text-white shadow-sm"></div>
             
-            <div>
-                <h3 class="font-bold text-xs sm:text-sm mb-1">📊 ข้อมูลทางเทคนิค</h3>
-                <ul id="rock-details" class="text-[10px] sm:text-xs space-y-0.5 opacity-90">
-                </ul>
+            <div class="space-y-1 text-[9px]">
+                <p id="rock-desc" class="text-slate-600 leading-snug line-clamp-2"></p>
+                <div class="bg-slate-50/80 rounded p-1 border border-slate-100">
+                    <ul id="rock-details" class="text-slate-500 space-y-0.5 text-[8px]"></ul>
+                </div>
             </div>
         </div>
     </div>
+    
+    <!-- Info Toggle Button -->
+    <div id="info-toggle" class="fixed top-12 right-2 z-20 pointer-events-auto hidden">
+        <button onclick="toggleInfo()" class="info-toggle-btn" title="แสดงข้อมูล">
+            ℹ️
+        </button>
+    </div>
 
-    <!-- Exit Button -->
-    <button id="exit-btn" onclick="resetView()" class="hidden absolute top-16 sm:top-20 left-2 sm:left-4 glass-panel rounded-full px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm text-white font-semibold hover:bg-slate-800/90 transition-all pointer-events-auto">
-        ← กลับ
-    </button>
+    <!-- Rock Selection Grid - ขนาดเล็กลง -->
+    <div class="pointer-events-auto p-1.5">
+        <div class="gray-board max-w-[220px] mx-auto">
+            <div class="grid grid-cols-3 gap-0.5" id="rock-grid">
+                <!-- 9 rocks generated by JS -->
+            </div>
+        </div>
+    </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// ✅ STEP 1 — เพิ่ม ARButton
+import { ARButton } from 'three/addons/webxr/ARButton.js';
 
-<script>
 const rocksData = {
-    granite: { name: "แกรนิต (Granite)", category: "หินอัคนี (Igneous)", modelFile: "models/granite1.glb", 
-               desc: "หินอัคนีแทรกซ้อน มีเนื้อหยาบ", details: ["ความแข็ง: 6-7 (Mohs)", "เนื้อหิน: หยาบ"] },
-    basalt: { name: "บะซอลต์ (Basalt)", category: "หินอัคนี (Igneous)", modelFile: "models/basalt.glb",
-              desc: "หินอัคนีพุ เนื้อละเอียด", details: ["ความแข็ง: 5-6 (Mohs)", "เนื้อหิน: ละเอียด"] },
-    obsidian: { name: "ออบซิเดียน (Obsidian)", category: "หินอัคนี (Igneous)", modelFile: "models/obsidian.glb",
-                desc: "หินแก้วภูเขาไฟ", details: ["ความแข็ง: 5-5.5 (Mohs)", "เนื้อหิน: แก้ว"] },
-    limestone: { name: "หินปูน (Limestone)", category: "หินตะกอน (Sedimentary)", modelFile: "models/limestone.glb",
-                 desc: "หินตะกอนเคมี", details: ["ความแข็ง: 3 (Mohs)", "มีฟอสซิล"] },
-    sandstone: { name: "หินทราย (Sandstone)", category: "หินตะกอน (Sedimentary)", modelFile: "models/sandstone.glb",
-                 desc: "หินตะกอนขนาดทราย", details: ["ความแข็ง: 6-7 (Mohs)", "เนื้อหิน: หยาบ"] },
-    shale: { name: "ชนวน (Shale)", category: "หินตะกอน (Sedimentary)", modelFile: "models/shale.glb",
-             desc: "หินตะกอนขนาดดิน", details: ["ความแข็ง: 1-3 (Mohs)", "เนื้อละเอียดมาก"] },
-    marble: { name: "หินอ่อน (Marble)", category: "หินแปร (Metamorphic)", modelFile: "models/marble.glb",
-              desc: "หินแปรจากหินปูน", details: ["ความแข็ง: 3-4 (Mohs)", "ผลึกหยาบ"] },
-    gneiss: { name: "กนีส (Gneiss)", category: "หินแปร (Metamorphic)", modelFile: "models/gneiss.glb",
-              desc: "หินแปรขั้นสูง", details: ["ความแข็ง: 6-7 (Mohs)", "เป็นแถบ"] },
-    quartzite: { name: "ควอตไซต์ (Quartzite)", category: "หินแปร (Metamorphic)", modelFile: "models/quartzite.glb",
-                 desc: "หินแปรจากหินทราย", details: ["ความแข็ง: 7 (Mohs)", "เนื้อแน่น"] }
+    granite: { 
+        name: "Granite", 
+        thai: "แกรนิต", 
+        category: "หินอัคนี", 
+        categoryEn: "Igneous", 
+        categoryClass: "category-igneous",
+        modelFile: 'models/granite1.glb',
+        desc: "หินอัคนีแทรกซ้อน มีเนื้อหยาบประกอบด้วยควอตซ์ เฟลด์สปาร์ และไมกา", 
+        details: ["ความแข็ง: 6-7", "เนื้อหยาบ", "สี: ชมพู เทา"] 
+    },
+    basalt: { 
+        name: "Basalt", 
+        thai: "บะซอลต์", 
+        category: "หินอัคนี", 
+        categoryEn: "Igneous", 
+        categoryClass: "category-igneous",
+        modelFile: 'models/basalt.glb',
+        desc: "หินอัคนีพุ เนื้อละเอียด เกิดจากลาวาที่เย็นตัวอย่างรวดเร็ว", 
+        details: ["ความแข็ง: 5-6", "เนื้อละเอียด", "สี: ดำ เทา"] 
+    },
+    obsidian: { 
+        name: "Obsidian", 
+        thai: "ออบซิเดียน", 
+        category: "หินอัคนี", 
+        categoryEn: "Igneous", 
+        categoryClass: "category-igneous",
+        modelFile: 'models/obsidian.glb',
+        desc: "หินแก้วภูเขาไฟ มีความเงางามเหมือนกระจก", 
+        details: ["ความแข็ง: 5-5.5", "เนื้อแก้ว", "สี: ดำ"] 
+    },
+    limestone: { 
+        name: "Limestone", 
+        thai: "หินปูน", 
+        category: "หินตะกอน", 
+        categoryEn: "Sedimentary", 
+        categoryClass: "category-sedimentary",
+        modelFile: 'models/limestone.glb',
+        desc: "หินตะกอนเคมี ประกอบด้วยแคลเซียมคาร์บอเนต", 
+        details: ["ความแข็ง: 3", "มีฟอสซิล", "สี: ขาว เทา"] 
+    },
+    sandstone: { 
+        name: "Sandstone", 
+        thai: "หินทราย", 
+        category: "หินตะกอน", 
+        categoryEn: "Sedimentary", 
+        categoryClass: "category-sedimentary",
+        modelFile: 'models/sandstone.glb',
+        desc: "หินตะกอนขนาดทราย เกิดจากการสะสมของเม็ดทราย", 
+        details: ["ความแข็ง: 6-7", "เนื้อหยาบ", "สี: น้ำตาล"] 
+    },
+    shale: { 
+        name: "Shale", 
+        thai: "ชนวน", 
+        category: "หินตะกอน", 
+        categoryEn: "Sedimentary", 
+        categoryClass: "category-sedimentary",
+        modelFile: 'models/shale.glb',
+        desc: "หินตะกอนขนาดดิน เนื้อละเอียดมาก", 
+        details: ["ความแข็ง: 1-3", "เนื้อละเอียด", "สี: เทา ดำ"] 
+    },
+    marble: { 
+        name: "Marble", 
+        thai: "หินอ่อน", 
+        category: "หินแปร", 
+        categoryEn: "Metamorphic", 
+        categoryClass: "category-metamorphic",
+        modelFile: 'models/marble.glb',
+        desc: "หินแปรจากหินปูน มีผลึกหยาบและลวดลายสวยงาม", 
+        details: ["ความแข็ง: 3-4", "ผลึกหยาบ", "สี: ขาว"] 
+    },
+    gneiss: { 
+        name: "Gneiss", 
+        thai: "กนีส", 
+        category: "หินแปร", 
+        categoryEn: "Metamorphic", 
+        categoryClass: "category-metamorphic",
+        modelFile: 'models/gneiss.glb',
+        desc: "หินแปรขั้นสูง มีลักษณะเป็นแถบสลับสี", 
+        details: ["ความแข็ง: 6-7", "เป็นแถบสลับ", "สี: ขาว-ดำ"] 
+    },
+    quartzite: { 
+        name: "Quartzite", 
+        thai: "ควอตไซต์", 
+        category: "หินแปร", 
+        categoryEn: "Metamorphic", 
+        categoryClass: "category-metamorphic",
+        modelFile: 'models/quartzite.glb',
+        desc: "หินแปรจากหินทราย มีความแข็งและเนื้อแน่น", 
+        details: ["ความแข็ง: 7", "เนื้อแน่น", "สี: ขาว เทา"] 
+    }
 };
 
-let scene, camera, renderer, controls, loader;
-let currentRock = null;
+let camera, scene, renderer, controls, loader;
+let currentModel = null;
+let isInfoVisible = false;
 
 function init() {
     scene = new THREE.Scene();
-    // ไม่กำหนด background เพื่อให้เห็นพื้นหลัง body
-    
+
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 4);
-    
+
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setClearColor(0x000000, 0);
+    
+    // ✅ STEP 2 — เปิด WebXR
     renderer.xr.enabled = true;
-    renderer.setClearColor(0x000000, 0); // โปร่งใส
+    
     document.getElementById('canvas-container').appendChild(renderer.domElement);
-    
-    loader = new THREE.GLTFLoader();
-    
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 1.5;
-    controls.maxDistance = 10;
+    controls.minDistance = 2;
+    controls.maxDistance = 8;
     controls.enablePan = false;
-    controls.target.set(0, 0, 0);
-    
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-    
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(5, 5, 5);
+    dirLight.position.set(3, 5, 5);
     dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
     scene.add(dirLight);
     
     const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.5);
-    fillLight.position.set(-5, 0, -5);
+    fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
+
+    loader = new GLTFLoader();
+    generateTable();
+    window.addEventListener('resize', onWindowResize);
     
-    window.addEventListener('resize', onWindowResize, false);
-    animate();
+    // ✅ STEP 3 — เปลี่ยนปุ่ม AR ให้เปิดจริง
+    document.getElementById('arBtn').addEventListener('click', async () => {
+        if (!navigator.xr) {
+            alert('มือถือหรือ browser ไม่รองรับ AR');
+            return;
+        }
+
+        const supported = await navigator.xr.isSessionSupported('immersive-ar');
+
+        if (!supported) {
+            alert('อุปกรณ์นี้ไม่รองรับ AR');
+            return;
+        }
+
+        // ⭐ สร้างปุ่ม START AR จริง
+        const arButton = ARButton.createButton(renderer, {
+            requiredFeatures: ['hit-test']
+        });
+
+        document.body.appendChild(arButton);
+
+        // กดให้เข้า AR ทันที (ไม่ต้องกดซ้ำ)
+        arButton.click();
+    });
+    
+    // Load first rock
+    setTimeout(() => selectRock('granite'), 500);
+    
+    // ✅ STEP 4 — เปลี่ยน animate
+    renderer.setAnimationLoop(animate);
 }
 
-function showRock(type) {
+function generateTable() {
+    const grid = document.getElementById('rock-grid');
+    Object.keys(rocksData).forEach(key => {
+        const rock = rocksData[key];
+        const btn = document.createElement('button');
+        btn.className = `rock-btn ${rock.categoryClass} rounded-md flex flex-col items-center justify-center pointer-events-auto`;
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            selectRock(key);
+        };
+        
+        btn.innerHTML = `
+            <span class="rock-name-th">${rock.thai}</span>
+            <span class="rock-name-en">${rock.name}</span>
+        `;
+        grid.appendChild(btn);
+    });
+}
+
+function selectRock(type) {
     const data = rocksData[type];
+    if (!data) return;
+
+    // Update Info Panel
     document.getElementById('rock-name').textContent = data.name;
-    document.getElementById('rock-category').textContent = data.category;
+    document.getElementById('rock-thai').textContent = data.thai;
+    
+    const categoryEl = document.getElementById('rock-category');
+    categoryEl.textContent = data.category;
+    categoryEl.className = `inline-block px-1.5 py-0.5 rounded-full text-[8px] mb-1 font-medium text-white shadow-sm ${data.categoryClass}`;
+    
     document.getElementById('rock-desc').textContent = data.desc;
-    document.getElementById('rock-details').innerHTML = data.details.map(d => `<li>• ${d}</li>`).join('');
-    document.getElementById('info-panel').style.display = 'block';
-    document.getElementById('exit-btn').classList.remove('hidden');
+    document.getElementById('rock-details').innerHTML = data.details.map(d => 
+        `<li class="flex items-center gap-1"><span class="text-blue-500 text-[7px]">•</span> ${d}</li>`
+    ).join('');
+    
+    // Show Info Panel
+    showInfo();
+    
     loadModel(data.modelFile);
 }
 
+function toggleInfo() {
+    isInfoVisible = !isInfoVisible;
+    const panel = document.getElementById('info-panel');
+    const toggle = document.getElementById('info-toggle');
+    
+    if (isInfoVisible) {
+        panel.classList.remove('hidden-panel');
+        toggle.classList.add('hidden');
+    } else {
+        panel.classList.add('hidden-panel');
+        toggle.classList.remove('hidden');
+    }
+}
+
+function showInfo() {
+    isInfoVisible = true;
+    document.getElementById('info-panel').classList.remove('hidden-panel');
+    document.getElementById('info-toggle').classList.add('hidden');
+}
+
 function loadModel(filePath) {
-    if (currentRock) {
-        scene.remove(currentRock);
-        currentRock = null;
+    if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
     }
     document.getElementById('loader').style.display = 'block';
     
     loader.load(filePath, (gltf) => {
         document.getElementById('loader').style.display = 'none';
-        currentRock = gltf.scene;
+        currentModel = gltf.scene;
         
-        const box = new THREE.Box3().setFromObject(currentRock);
+        const box = new THREE.Box3().setFromObject(currentModel);
         const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
+        const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+        const scale = 2 / maxDim;
         
-        const targetSize = 2.5;
-        const scale = targetSize / maxDim;
+        currentModel.scale.setScalar(scale);
+        currentModel.position.sub(center.multiplyScalar(scale));
+        currentModel.position.y += 0.5;
         
-        currentRock.scale.setScalar(scale);
-        
-        const pivot = new THREE.Group();
-        currentRock.position.set(
-            -center.x * scale,
-            -center.y * scale,
-            -center.z * scale
-        );
-        
-        pivot.add(currentRock);
-        currentRock = pivot;
-        
-        currentRock.traverse(c => { 
+        currentModel.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = true; 
                 c.receiveShadow = true; 
             }
         });
+        scene.add(currentModel);
         
-        scene.add(currentRock);
-        
-        controls.target.set(0, 0, 0);
-        controls.update();
-        
+        // Entry animation
         let s = 0;
         const entry = setInterval(() => {
             s += 0.1;
-            currentRock.scale.setScalar(s);
-            if(s >= 1) clearInterval(entry);
+            currentModel.scale.setScalar(s * scale);
+            currentModel.rotation.y += 0.1;
+            if(s >= 1) {
+                clearInterval(entry);
+                currentModel.rotation.y = 0;
+            }
         }, 16);
-        
     }, undefined, (error) => {
-        document.getElementById('loader').style.display = 'none';
         console.error('Error loading model:', error);
+        document.getElementById('loader').style.display = 'none';
         
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x64748b,
-            roughness: 0.5,
-            metalness: 0.1
+        // Fallback geometry
+        const geo = new THREE.DodecahedronGeometry(0.8, 1);
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: 0x8b5cf6, 
+            roughness: 0.4, 
+            metalness: 0.3
         });
-        currentRock = new THREE.Mesh(geometry, material);
-        scene.add(currentRock);
+        currentModel = new THREE.Mesh(geo, mat);
+        currentModel.position.y = 0.5;
+        scene.add(currentModel);
     });
-}
-
-function closeInfo() { 
-    document.getElementById('info-panel').style.display = 'none'; 
-}
-
-function resetView() { 
-    if(currentRock) {
-        scene.remove(currentRock);
-        currentRock = null;
-    }
-    document.getElementById('info-panel').style.display = 'none'; 
-    document.getElementById('exit-btn').classList.add('hidden');
-    
-    controls.reset();
-    controls.target.set(0, 0, 0);
-    controls.update();
-}
-
-async function enterAR() { 
-    if(!navigator.xr) {
-        alert('อุปกรณ์นี้ไม่รองรับ AR');
-        return;
-    }
-    try {
-        const supported = await navigator.xr.isSessionSupported('immersive-ar');
-        if(supported) {
-            alert('เริ่มโหมด AR...');
-        } else {
-            alert('ไม่รองรับ AR บนอุปกรณ์นี้');
-        }
-    } catch(e) {
-        alert('ไม่สามารถใช้งาน AR ได้');
-    }
 }
 
 function onWindowResize() {
@@ -369,16 +586,15 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// ✅ STEP 4 — แก้ animate
 function animate() {
-    requestAnimationFrame(animate);
-    
-    if(currentRock) {
-        currentRock.rotation.y += 0.005;
-    }
-    
     controls.update();
+    if (currentModel) currentModel.rotation.y += 0.003;
     renderer.render(scene, camera);
 }
+
+// Global functions for onclick handlers
+window.toggleInfo = toggleInfo;
 
 init();
 </script>

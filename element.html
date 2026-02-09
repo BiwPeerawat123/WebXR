@@ -10,7 +10,7 @@
             margin: 0; 
             overflow: hidden; 
             background-color: #f1f5f9; 
-            background-image: url('inmeg/background.jpg'); 
+            background-image: url('inmeg/background.avif'); 
             background-size: cover; 
             background-position: center; 
             background-repeat: no-repeat;
@@ -63,21 +63,16 @@
         
         /* Glass UI */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
         
         @keyframes slideInRight {
             from { transform: translateX(20px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideInUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
         
         /* ✨ ปุ่ม AR ใหม่ - Futuristic Gradient */
@@ -145,8 +140,8 @@
         
         /* ปุ่มปิดที่ชัดเจน */
         .close-btn {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             background: rgba(0,0,0,0.05);
             border: 1px solid rgba(0,0,0,0.1);
@@ -156,7 +151,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .close-btn:hover {
@@ -164,6 +159,34 @@
             color: white;
             border-color: #dc2626;
             transform: rotate(90deg);
+        }
+        
+        /* ปุ่มเปิดข้อมูลเล็ก */
+        .info-toggle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+        
+        .info-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.6); }
         }
         
         .loader {
@@ -176,6 +199,41 @@
             display: none; z-index: 50;
         }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        
+        /* Info Panel ขนาดเล็กสำหรับมือถือ */
+        .info-panel {
+            position: fixed;
+            top: 60px;
+            right: 8px;
+            width: 140px;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+        
+        .info-panel.hidden-panel {
+            transform: translateX(160px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .info-panel.compact {
+            width: auto;
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+            box-shadow: none;
+        }
+        
+        @media (min-width: 641px) {
+            .info-panel {
+                width: 180px;
+                right: 12px;
+                top: 70px;
+            }
+            .info-panel.hidden-panel {
+                transform: translateX(200px);
+            }
+        }
         
         @media (max-width: 640px) {
             .element-btn { min-height: 40px; min-width: 40px; }
@@ -213,32 +271,42 @@
             </div>
         </div>
         
-        <!-- ปุ่ม AR ที่ปรับปรุงใหม่ -->
+        <!-- ปุ่ม AR -->
         <button id="arBtn" class="ar-button">
             <span class="ar-icon">🥽</span>
             <span>AR Mode</span>
         </button>
     </div>
 
-    <!-- Desktop Info - ซ่อนไว้ตอนเริ่มต้น (hidden) -->
-    <div id="desktop-info" class="hidden absolute right-3 top-14 w-56 glass-panel rounded-xl p-4 text-slate-800 pointer-events-auto shadow-2xl z-20">
-        <div class="flex justify-between items-start mb-2">
-            <div>
-                <h2 id="info-symbol" class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 leading-none"></h2>
-                <h3 id="info-name" class="text-sm font-medium text-slate-700 mt-1"></h3>
+    <!-- Info Panel ขนาดเล็ก -->
+    <div id="info-panel" class="info-panel glass-panel rounded-xl p-3 text-slate-800 pointer-events-auto hidden-panel">
+        <!-- ส่วนแสดงข้อมูล -->
+        <div id="info-content">
+            <div class="flex justify-between items-start mb-1.5">
+                <div>
+                    <h2 id="info-symbol" class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 leading-none"></h2>
+                    <h3 id="info-name" class="text-[11px] font-medium text-slate-700 mt-0.5"></h3>
+                </div>
+                <button onclick="toggleInfo()" class="close-btn" title="ปิด">
+                    ✕
+                </button>
             </div>
-            <button onclick="closeInfo()" class="close-btn" title="ปิด">
-                ✕
-            </button>
-        </div>
-        <div id="info-category" class="inline-block px-2 py-1 rounded-full text-[10px] mb-2 font-medium text-white shadow-sm"></div>
-        
-        <div class="space-y-2 text-xs">
-            <p id="info-desc" class="text-slate-600 leading-relaxed"></p>
-            <div class="bg-slate-50/80 rounded-lg p-2 border border-slate-100">
-                <ul id="info-details" class="text-slate-500 space-y-1 text-[11px]"></ul>
+            <div id="info-category" class="inline-block px-1.5 py-0.5 rounded-full text-[9px] mb-1.5 font-medium text-white shadow-sm"></div>
+            
+            <div class="space-y-1.5 text-[10px]">
+                <p id="info-desc" class="text-slate-600 leading-snug line-clamp-3"></p>
+                <div class="bg-slate-50/80 rounded-md p-1.5 border border-slate-100">
+                    <ul id="info-details" class="text-slate-500 space-y-0.5 text-[9px]"></ul>
+                </div>
             </div>
         </div>
+    </div>
+    
+    <!-- ปุ่มเปิดข้อมูล (แสดงเมื่อปิด) -->
+    <div id="info-toggle" class="fixed top-16 right-3 z-20 pointer-events-auto hidden">
+        <button onclick="toggleInfo()" class="info-toggle-btn" title="แสดงข้อมูล">
+            ℹ️
+        </button>
     </div>
 
     <!-- Periodic Table Grid -->
@@ -251,50 +319,27 @@
     </div>
 </div>
 
-<!-- Mobile Bottom Sheet - ซ่อนไว้ตอนเริ่มต้น -->
-<div id="mobile-sheet" class="fixed inset-x-0 bottom-0 glass-panel rounded-t-2xl p-4 text-slate-800 transform translate-y-full transition-transform duration-300 z-30 lg:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
-    <div class="w-12 h-1.5 bg-slate-300/50 rounded-full mx-auto mb-3"></div>
-    
-    <div class="flex justify-between items-start mb-2">
-        <div class="flex items-center gap-3">
-            <h2 id="mobile-symbol" class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"></h2>
-            <div>
-                <h3 id="mobile-name" class="text-sm font-semibold text-slate-800"></h3>
-                <span id="mobile-category" class="text-[10px] text-slate-500"></span>
-            </div>
-        </div>
-        <button onclick="closeMobileSheet()" class="close-btn" title="ปิด">
-            ✕
-        </button>
-    </div>
-    
-    <p id="mobile-desc" class="text-xs text-slate-600 mb-3 leading-relaxed"></p>
-    
-    <div class="bg-slate-50/80 rounded-lg p-3 border border-slate-100">
-        <div id="mobile-details" class="text-[11px] text-slate-600 grid grid-cols-3 gap-2"></div>
-    </div>
-</div>
-
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
 
 const elementsData = {
     'Ag': { number: 47, name: 'เงิน', modelFile: 'inmeg/silver.glb', category: 'transition', 
            desc: 'โลหะมีค่าสีขาวเงางาม นำความร้อนและไฟฟ้าดีที่สุด ใช้ในเครื่องประดับและอิเล็กทรอนิกส์',  details: ['Z: 47', 'มวล: 107.87', 'จุดหลอม: 961.8°C'] },
     'Au': { number: 79, name: 'ทองคำ', modelFile: 'inmeg/gold.glb', category: 'transition', 
            desc: 'โลหะมีค่าสีเหลืองนวล ไม่เกิดออกซิเดชัน ใช้เป็นเครื่องประดับและสำรองเงินตรา',  details: ['Z: 79', 'มวล: 196.97', 'จุดหลอม: 1064°C'] },
-    'Na': { number: 11, name: 'โซเดียม', modelFile: 'inmeg/sodium.glb', category: 'alkaline', 
-            desc: 'โลหะอ่อนนุ่ม สีเงิน ตอบสนองกับน้ำรุนแรง', details: ['Z: 11', 'มวล: 22.99', 'จุดหลอม: 97.8°C'] },
-    'Mg': { number: 12, name: 'แมกนีเซียม', modelFile: 'inmeg/magnesium.glb', category: 'alkaline', 
-            desc: 'โลหะเบา ติดไฟได้ ผิวสีเงิน ใช้ในอัลลอย', details: ['Z: 12', 'มวล: 24.31', 'จุดหลอม: 650°C'] },
+    'Mg': { number: 12, name: 'แม็กนิเซียม', modelFile: 'inmeg/magnesium.glb', category: 'alkaline', 
+           desc: 'โลหะเบาสีขาวเงิน ติดไฟได้ง่ายในอากาศ เป็นธาตุที่จำเป็นต่อร่างกาย ใช้ในอุตสาหกรรมโลหะผสมและยา',  details: ['Z: 12', 'มวล: 24.305', 'จุดหลอม: 650°C'] },
+    'S': { number: 16, name: 'กำมะถัน', modelFile: 'inmeg/sulfur.glb', category: 'nonmetal', 
+         desc: 'ธาตุไม่เป็นโลหะสีเหลือง มีกลิ่นเหมือนไข่เน่า ใช้ในอุตสาหกรรมยาง ดินปืน และยาฆ่าเชื้อ',  details: ['Z: 16', 'มวล: 32.06', 'จุดหลอม: 115.21°C'] },
     'Al': { number: 13, name: 'อลูมิเนียม', modelFile: 'inmeg/aluminium.glb', category: 'post-transition', 
             desc: 'โลหะเบา ทนต่อการกัดกร่อน นำความร้อนและไฟฟ้าดี', details: ['Z: 13', 'มวล: 26.98', 'จุดหลอม: 660°C'] },
-    'Si': { number: 14, name: 'ซิลิคอน', modelFile: 'inmeg/silicon.glb', category: 'metalloid', 
-            desc: 'กึ่งโลหะสำคัญ วัตถุดิบอิเล็กทรอนิกส์ แวววาวสีเทา', details: ['Z: 14', 'มวล: 28.09', 'จุดหลอม: 1414°C'] },
-    'K': { number: 19, name: 'โพแทสเซียม', modelFile: 'inmeg/potassium.glb', category: 'alkaline', 
-            desc: 'โลหะอัลคาไลน์ สีเงิน อ่อนนุ่มมาก ตอบสนองกับน้ำ', details: ['Z: 19', 'มวล: 39.10', 'จุดหลอม: 63.5°C'] },
+    'Ga': { number: 31, name: 'แกลเลียม', modelFile: 'inmeg/gallium.glb', category: 'post-transition', 
+        desc: 'โลหะสีเงินแวววาว หลอมเหลวที่อุณหภูมิต่ำกว่าร่างกาย (29.76°C) ใช้ในเซมิคอนดักเตอร์และโซลาร์เซลล์',  details: ['Z: 31', 'มวล: 69.723', 'จุดหลอม: 29.76°C'] },
+    'Sb': { number: 51, name: 'พลวง', modelFile: 'inmeg/antimony.glb', category: 'metalloid', 
+    desc: 'ธาตุกึ่งโลหะสีเงินอมน้ำเงิน เปราะและเปราะง่าย ใช้ผสมโลหะให้แข็งแรงและในอุตสาหกรรมแบตเตอรี่',   details: ['Z: 51', 'มวล: 121.760', 'จุดหลอม: 630.63°C'] },
     'Ca': { number: 20, name: 'แคลเซียม', modelFile: 'inmeg/calcium.glb', category: 'alkaline', 
             desc: 'โลหะสีเทาอ่อน แข็งแรง พบมากในกระดูกและหินปูน', details: ['Z: 20', 'มวล: 40.08', 'จุดหลอม: 842°C'] },
     'Fe': { number: 26, name: 'เหล็ก', modelFile: 'inmeg/iron.glb', category: 'transition', 
@@ -310,13 +355,17 @@ const elementsData = {
 
 let camera, scene, renderer, controls, loader;
 let currentModel = null;
+let isInfoVisible = false;
+
+// ⭐ AR
+let controller;
+let reticle;
+let hitTestSource = null;
+let hitTestSourceRequested = false;
+let currentModelPath = null;
 
 function init() {
     scene = new THREE.Scene();
-    // ไม่กำหนด background color เพื่อให้เห็นภาพพื้นหลังของ body
-    // scene.background = null;
-    // ไม่ใช้ fog เพื่อไม่ให้บดบังพื้นหลัง
-    // scene.fog = null;
 
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 5);
@@ -326,8 +375,11 @@ function init() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // เปิดใช้ alpha เพื่อให้โปร่งใส
     renderer.setClearColor(0x000000, 0);
+    
+    // ⭐ เปิด XR
+    renderer.xr.enabled = true;
+    
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
@@ -349,27 +401,43 @@ function init() {
     fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
 
+    // ⭐ RETICLE
+    const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI/2);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+    
+    reticle = new THREE.Mesh(ringGeo, ringMat);
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    // controller
+    controller = renderer.xr.getController(0);
+    controller.addEventListener('select', placeObject);
+    scene.add(controller);
+
     loader = new GLTFLoader();
     generateTable();
     window.addEventListener('resize', onWindowResize);
     
-    // AR Button Event
-    document.getElementById('arBtn').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (!navigator.xr) { 
-            alert('เบราว์เซอร์นี้ไม่รองรับ WebXR / AR'); 
-            return; 
+    // ⭐ แก้ปุ่ม AR
+    document.getElementById('arBtn').addEventListener('click', async () => {
+        if (!navigator.xr) {
+            alert('มือถือหรือ browser ไม่รองรับ AR');
+            return;
         }
-        try {
-            const supported = await navigator.xr.isSessionSupported('immersive-ar');
-            if (supported) {
-                alert('กำลังเปิดโหมด AR...\n(ต้องใช้งานบนมือถือที่รองรับ)');
-            } else {
-                alert('อุปกรณ์นี้ไม่รองรับ AR');
-            }
-        } catch(e) {
-            alert('ไม่สามารถใช้งาน AR ได้');
+
+        const supported = await navigator.xr.isSessionSupported('immersive-ar');
+
+        if (!supported) {
+            alert('อุปกรณ์นี้ไม่รองรับ AR');
+            return;
         }
+
+        document.body.appendChild(
+            ARButton.createButton(renderer, {
+                requiredFeatures: ['hit-test']
+            })
+        );
     });
     
     animate();
@@ -399,38 +467,24 @@ function selectElement(symbol) {
     const data = elementsData[symbol];
     if (!data) return;
 
-    // Update Desktop Info
-    const desktopInfo = document.getElementById('desktop-info');
+    // Update Info Panel
     document.getElementById('info-symbol').textContent = symbol;
     document.getElementById('info-name').textContent = data.name;
     
     const categoryEl = document.getElementById('info-category');
     categoryEl.textContent = getCategoryTh(data.category);
-    categoryEl.className = `inline-block px-2 py-1 rounded-full text-[10px] mb-2 font-medium text-white shadow-sm cat-${data.category}`;
+    categoryEl.className = `inline-block px-1.5 py-0.5 rounded-full text-[9px] mb-1.5 font-medium text-white shadow-sm cat-${data.category}`;
     
     document.getElementById('info-desc').textContent = data.desc;
     document.getElementById('info-details').innerHTML = data.details.map(d => 
-        `<li class="flex items-center gap-1"><span class="text-blue-500">•</span> ${d}</li>`
+        `<li class="flex items-center gap-1"><span class="text-blue-500 text-[8px]">•</span> ${d}</li>`
     ).join('');
     
-    // Show Desktop Info with animation
-    desktopInfo.classList.remove('hidden');
-    desktopInfo.style.animation = 'slideInRight 0.3s ease-out';
+    // Show Info Panel
+    showInfo();
     
-    // Update Mobile Info
-    document.getElementById('mobile-symbol').textContent = symbol;
-    document.getElementById('mobile-name').textContent = data.name;
-    document.getElementById('mobile-category').textContent = getCategoryTh(data.category);
-    document.getElementById('mobile-desc').textContent = data.desc;
-    document.getElementById('mobile-details').innerHTML = data.details.map(d => {
-        const [label, value] = d.split(':');
-        return `<div class="text-center bg-white rounded p-1 shadow-sm"><div class="text-blue-600 font-medium text-[9px]">${label}</div><div class="text-slate-800 font-bold">${value || ''}</div></div>`;
-    }).join('');
-    
-    // Show Mobile Sheet
-    if (window.innerWidth < 1024) {
-        document.getElementById('mobile-sheet').classList.remove('translate-y-full');
-    }
+    // ⭐ จำโมเดลที่เลือก
+    currentModelPath = data.modelFile;
     
     loadModel(data.modelFile);
 }
@@ -441,14 +495,24 @@ function getCategoryTh(cat) {
     return map[cat] || cat;
 }
 
-function closeInfo() {
-    const el = document.getElementById('desktop-info');
-    el.style.animation = 'none';
-    setTimeout(() => el.classList.add('hidden'), 10);
+function toggleInfo() {
+    isInfoVisible = !isInfoVisible;
+    const panel = document.getElementById('info-panel');
+    const toggle = document.getElementById('info-toggle');
+    
+    if (isInfoVisible) {
+        panel.classList.remove('hidden-panel');
+        toggle.classList.add('hidden');
+    } else {
+        panel.classList.add('hidden-panel');
+        toggle.classList.remove('hidden');
+    }
 }
 
-function closeMobileSheet() {
-    document.getElementById('mobile-sheet').classList.add('translate-y-full');
+function showInfo() {
+    isInfoVisible = true;
+    document.getElementById('info-panel').classList.remove('hidden-panel');
+    document.getElementById('info-toggle').classList.add('hidden');
 }
 
 function loadModel(filePath) {
@@ -508,6 +572,21 @@ function loadModel(filePath) {
     });
 }
 
+// ⭐ เพิ่มฟังก์ชันวางโมเดล
+function placeObject() {
+    if (!reticle.visible || !currentModelPath) return;
+
+    loader.load(currentModelPath, (gltf) => {
+        const model = gltf.scene;
+        
+        model.scale.set(0.3, 0.3, 0.3);
+        model.position.setFromMatrixPosition(reticle.matrix);
+        model.quaternion.setFromRotationMatrix(reticle.matrix);
+        
+        scene.add(model);
+    });
+}
+
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -515,15 +594,53 @@ function onWindowResize() {
 }
 
 function animate() {
-    requestAnimationFrame(animate);
+    // ⭐ เปลี่ยนเป็น setAnimationLoop
+    renderer.setAnimationLoop(render);
+}
+
+// ⭐ เพิ่ม render XR
+function render(timestamp, frame) {
+    if (frame) {
+        const referenceSpace = renderer.xr.getReferenceSpace();
+        const session = renderer.xr.getSession();
+
+        if (hitTestSourceRequested === false) {
+            session.requestReferenceSpace('viewer').then((refSpace) => {
+                session.requestHitTestSource({ space: refSpace }).then((source) => {
+                    hitTestSource = source;
+                });
+            });
+
+            session.addEventListener('end', () => {
+                hitTestSourceRequested = false;
+                hitTestSource = null;
+            });
+
+            hitTestSourceRequested = true;
+        }
+
+        if (hitTestSource) {
+            const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+            if (hitTestResults.length) {
+                const hit = hitTestResults[0];
+                const pose = hit.getPose(referenceSpace);
+
+                reticle.visible = true;
+                reticle.matrix.fromArray(pose.transform.matrix);
+            } else {
+                reticle.visible = false;
+            }
+        }
+    }
+
     controls.update();
     if (currentModel) currentModel.rotation.y += 0.003;
     renderer.render(scene, camera);
 }
 
 // Global functions for onclick handlers
-window.closeInfo = closeInfo;
-window.closeMobileSheet = closeMobileSheet;
+window.toggleInfo = toggleInfo;
 
 init();
 </script>

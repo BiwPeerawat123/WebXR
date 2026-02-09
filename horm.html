@@ -46,6 +46,10 @@
             background-color: #2980b9;
         }
 
+        .sidebar button.active {
+            background-color: #e74c3c;
+        }
+
         /* ปุ่มฟันเฟือง - อยู่ด้านล่างสุด แก้ไขไม่ให้เอียง */
         .settings-btn {
             margin-top: auto;
@@ -363,8 +367,8 @@
 
     <div class="sidebar" id="sidebar">
         <button id="periodicBtn" onclick="loadPage('element.html', 'periodic')">ตารางธาตุ</button>
-        <button onclick="loadPage('solar.html', 'solar')">ระบบสุริยะ</button>
-        <button onclick="loadPage('rock.html', 'horm')">หิน</button>
+        <button id="solarBtn" onclick="loadPage('solar.html', 'solar')">ระบบสุริยะ</button>
+        <button id="rockBtn" onclick="loadPage('rock.html', 'horm')">หิน</button>
         
         <!-- ปุ่มฟันเฟืองอยู่ใต้สุด แก้ไขไม่เอียงแล้ว -->
         <button class="settings-btn" onclick="toggleSettings()" title="ตั้งค่าเสียง">
@@ -479,7 +483,7 @@
             });
         }
 
-        // เลือกเพลง
+        // เลือกเพลง - ไม่ปิด modal อัตโนมัติ
         function selectTrack(index) {
             currentTrackIndex = index;
             bgMusic.src = tracks[index].src;
@@ -495,11 +499,23 @@
                 });
             }
             
-            // อัปเดต UI
-            createTrackButtons();
+            // อัปเดต UI อย่างเดียว ไม่ปิด modal
+            updateTrackButtonsUI();
             
             // บันทึกลง localStorage
             localStorage.setItem('selectedTrack', index);
+        }
+
+        // อัปเดต UI ปุ่มเพลงโดยไม่ต้องสร้างใหม่ทั้งหมด
+        function updateTrackButtonsUI() {
+            const buttons = trackList.querySelectorAll('.track-btn');
+            buttons.forEach((btn, index) => {
+                if (index === currentTrackIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         }
 
         // ฟังก์ชันเปิด/ปิด Modal ตั้งค่า
@@ -534,15 +550,36 @@
             localStorage.setItem('volume', value);
         }
 
+        // อัปเดตสถานะปุ่ม active
+        function updateButtonStates(activePage) {
+            // ลบ active จากทุกปุ่ม
+            document.getElementById('periodicBtn').classList.remove('active');
+            document.getElementById('solarBtn').classList.remove('active');
+            document.getElementById('rockBtn').classList.remove('active');
+            
+            // เพิ่ม active ให้ปุ่มที่เลือก
+            if (activePage === 'periodic') {
+                document.getElementById('periodicBtn').classList.add('active');
+            } else if (activePage === 'solar') {
+                document.getElementById('solarBtn').classList.add('active');
+            } else if (activePage === 'horm') {
+                document.getElementById('rockBtn').classList.add('active');
+            }
+        }
+
         function loadPage(url, pageType) {
             if (currentPage === pageType) {
+                // ถ้ากดซ้ำปุ่มเดิม ให้ปิดหน้านั้น
                 contentFrame.src = '';
                 mainContent.classList.remove('page-active');
                 currentPage = null;
+                updateButtonStates(null);
             } else {
+                // เปลี่ยนไปหน้าใหม่
                 contentFrame.src = url;
                 mainContent.classList.add('page-active');
                 currentPage = pageType;
+                updateButtonStates(pageType);
             }
             
             if (isMobile) {
@@ -550,7 +587,7 @@
             }
         }
 
-        // ปิด modal เมื่อคลิกนอกพื้นที่
+        // ปิด modal เมื่อคลิกนอกพื้นที่ (ยกเว้นปุ่มใน modal)
         document.addEventListener('click', (e) => {
             if (!settingsModal.contains(e.target) && !e.target.closest('.settings-btn')) {
                 settingsModal.classList.remove('show');
