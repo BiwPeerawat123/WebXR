@@ -50,7 +50,7 @@
             background-color: #e74c3c;
         }
 
-        /* ปุ่มฟันเฟือง - อยู่ด้านล่างสุด แก้ไขไม่ให้เอียง */
+        /* ปุ่มฟันเฟือง - อยู่ด้านล่างสุด */
         .settings-btn {
             margin-top: auto;
             background-color: #34495e !important;
@@ -64,7 +64,6 @@
 
         .settings-btn:hover {
             background-color: #465f75 !important;
-            /* ลบ transform: rotate(30deg); ออกเพื่อไม่ให้เอียง */
         }
 
         .content {
@@ -370,7 +369,7 @@
         <button id="solarBtn" onclick="loadPage('solar.html', 'solar')">ระบบสุริยะ</button>
         <button id="rockBtn" onclick="loadPage('rock.html', 'horm')">หิน</button>
         
-        <!-- ปุ่มฟันเฟืองอยู่ใต้สุด แก้ไขไม่เอียงแล้ว -->
+        <!-- ปุ่มฟันเฟืองอยู่ใต้สุด -->
         <button class="settings-btn" onclick="toggleSettings()" title="ตั้งค่าเสียง">
             <span>⚙️</span>
             <span>ตั้งค่าเสียง</span>
@@ -434,7 +433,7 @@
         const contentFrame = document.getElementById('contentFrame');
         
         // ตัวแปรควบคุมเสียง
-        const bgMusic = new Audio(); // ใช้ Audio object แทน element
+        const bgMusic = new Audio();
         bgMusic.loop = true;
         
         const muteBtn = document.getElementById('muteBtn');
@@ -445,13 +444,13 @@
         const settingsModal = document.getElementById('settingsModal');
         const trackList = document.getElementById('trackList');
         
-        // 🎵 กำหนด 5 ไฟล์เสียงที่นี่ - แก้ไขชื่อไฟล์ตามที่คุณมี
+        // 🎵 กำหนด 5 ไฟล์เสียง
         const tracks = [
             { name: "เพลงที่ 1", src: "1.mp3" },
-            { name: "เพลงบรรยายระบบสุริยะ", src: "2.mp3" },
-            { name: "เพลงที่ 2", src: "3.mp3" },
-            { name: "เพลงที่ 3", src: "4.mp3" },
-            { name: "เพลงที่ 4", src: "music5.mp3" }
+            { name: "เพลงที่ 2", src: "2.mp3" },
+            { name: "เพลงที่ 3", src: "3.mp3" },
+            { name: "เพลงที่ 4", src: "4.mp3" },
+            { name: "เพลงบรรยายระบบสุริยะ", src: "5.mp3" }
         ];
         
         let currentTrackIndex = 0;
@@ -483,30 +482,24 @@
             });
         }
 
-        // เลือกเพลง - ไม่ปิด modal อัตโนมัติ
+        // เลือกเพลง
         function selectTrack(index) {
             currentTrackIndex = index;
             bgMusic.src = tracks[index].src;
             bgMusic.volume = currentVolume / 100;
-            
-            // โหลดเสียงใหม่
             bgMusic.load();
             
-            // เล่นถ้าไม่ได้ปิดเสียง
             if (!isMuted) {
                 bgMusic.play().catch(error => {
                     console.log('ต้องมีการกด interact ก่อนเล่นเสียง:', error);
                 });
             }
             
-            // อัปเดต UI อย่างเดียว ไม่ปิด modal
             updateTrackButtonsUI();
-            
-            // บันทึกลง localStorage
             localStorage.setItem('selectedTrack', index);
         }
 
-        // อัปเดต UI ปุ่มเพลงโดยไม่ต้องสร้างใหม่ทั้งหมด
+        // อัปเดต UI ปุ่มเพลง
         function updateTrackButtonsUI() {
             const buttons = trackList.querySelectorAll('.track-btn');
             buttons.forEach((btn, index) => {
@@ -552,12 +545,10 @@
 
         // อัปเดตสถานะปุ่ม active
         function updateButtonStates(activePage) {
-            // ลบ active จากทุกปุ่ม
             document.getElementById('periodicBtn').classList.remove('active');
             document.getElementById('solarBtn').classList.remove('active');
             document.getElementById('rockBtn').classList.remove('active');
             
-            // เพิ่ม active ให้ปุ่มที่เลือก
             if (activePage === 'periodic') {
                 document.getElementById('periodicBtn').classList.add('active');
             } else if (activePage === 'solar') {
@@ -567,15 +558,16 @@
             }
         }
 
+        // 🔧 ฟังก์ชันโหลดหน้า - แก้ไขให้กดซ้ำได้ (toggle)
         function loadPage(url, pageType) {
             if (currentPage === pageType) {
-                // ถ้ากดซ้ำปุ่มเดิม ให้ปิดหน้านั้น
+                // กดซ้ำปุ่มเดิม → ปิดหน้านั้น
                 contentFrame.src = '';
                 mainContent.classList.remove('page-active');
                 currentPage = null;
                 updateButtonStates(null);
             } else {
-                // เปลี่ยนไปหน้าใหม่
+                // กดปุ่มใหม่ หรือ เปิดจากปิดอยู่ → เปิดหน้านั้น
                 contentFrame.src = url;
                 mainContent.classList.add('page-active');
                 currentPage = pageType;
@@ -587,18 +579,17 @@
             }
         }
 
-        // ปิด modal เมื่อคลิกนอกพื้นที่ (ยกเว้นปุ่มใน modal)
+        // ปิด modal เมื่อคลิกนอกพื้นที่
         document.addEventListener('click', (e) => {
             if (!settingsModal.contains(e.target) && !e.target.closest('.settings-btn')) {
                 settingsModal.classList.remove('show');
             }
         });
 
-        // โหลดการตั้งค่าจาก localStorage เมื่อเปิดหน้า
+        // โหลดการตั้งค่าจาก localStorage
         window.addEventListener('load', () => {
             createTrackButtons();
             
-            // โหลดเพลงที่เลือกไว้ล่าสุด
             const savedTrack = localStorage.getItem('selectedTrack');
             if (savedTrack !== null) {
                 currentTrackIndex = parseInt(savedTrack);
@@ -607,7 +598,6 @@
                 bgMusic.src = tracks[0].src;
             }
             
-            // โหลดระดับเสียง
             const savedVolume = localStorage.getItem('volume');
             if (savedVolume !== null) {
                 currentVolume = parseInt(savedVolume);
@@ -616,7 +606,6 @@
                 bgMusic.volume = currentVolume / 100;
             }
             
-            // โหลดสถานะปิดเสียง
             const savedMute = localStorage.getItem('isMuted');
             if (savedMute === 'true') {
                 isMuted = true;

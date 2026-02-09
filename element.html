@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Periodic Table - Solid Elements</title>
+    <title>3D Metal Elements - Cu Ag Au</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { 
@@ -42,14 +42,10 @@
         .element-symbol { font-weight: bold; font-size: 0.75rem; line-height: 1; color: white; }
         .element-name { font-size: 0.45rem; opacity: 0.9; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; padding: 0 1px; color: rgba(255,255,255,0.95); }
         
-        /* Category Colors */
-        .cat-nonmetal { background: linear-gradient(135deg, #ec4899, #db2777); }
-        .cat-alkaline { background: linear-gradient(135deg, #f59e0b, #ea580c); }
-        .cat-post-transition { background: linear-gradient(135deg, #f87171, #ef4444); }
-        .cat-metalloid { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
-        .cat-transition { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-        .cat-noble { background: linear-gradient(135deg, #22d3ee, #06b6d4); }
-        .cat-other { background: linear-gradient(135deg, #64748b, #475569); }
+        /* Category Colors - โลหะทรานซิชัน */
+        .cat-copper { background: linear-gradient(135deg, #b87333, #cd853f); }
+        .cat-silver { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); }
+        .cat-gold { background: linear-gradient(135deg, #ffd700, #daa520); }
 
         /* Gray Board */
         .gray-board {
@@ -70,12 +66,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
         
-        @keyframes slideInRight {
-            from { transform: translateX(20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        /* ✨ ปุ่ม AR ใหม่ - Futuristic Gradient */
+        /* AR Button */
         .ar-button {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%);
             background-size: 200% 200%;
@@ -107,26 +98,6 @@
             transform: translateY(0) scale(0.95);
         }
         
-        /* เอฟเฟกต์แสงวิ่ง */
-        .ar-button::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -100%;
-            width: 60%;
-            height: 200%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: rotate(25deg);
-            transition: 0.5s;
-            animation: shimmer 2.5s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { left: -100%; }
-            20% { left: 200%; }
-            100% { left: 200%; }
-        }
-        
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -138,7 +109,7 @@
             filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
         }
         
-        /* ปุ่มปิดที่ชัดเจน */
+        /* Close button */
         .close-btn {
             width: 22px;
             height: 22px;
@@ -161,7 +132,7 @@
             transform: rotate(90deg);
         }
         
-        /* ปุ่มเปิดข้อมูลเล็ก */
+        /* Info toggle button */
         .info-toggle-btn {
             width: 36px;
             height: 36px;
@@ -200,7 +171,7 @@
         }
         @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
         
-        /* Info Panel ขนาดเล็กสำหรับมือถือ */
+        /* Info Panel */
         .info-panel {
             position: fixed;
             top: 60px;
@@ -214,14 +185,6 @@
             transform: translateX(160px);
             opacity: 0;
             pointer-events: none;
-        }
-        
-        .info-panel.compact {
-            width: auto;
-            background: transparent;
-            backdrop-filter: none;
-            border: none;
-            box-shadow: none;
         }
         
         @media (min-width: 641px) {
@@ -243,9 +206,112 @@
             .ar-button { padding: 6px 12px; font-size: 10px; }
         }
         
-        /* Periodic Table Container - ขยับขึ้น 8% */
+        /* Periodic Table Container */
         .periodic-table-container {
-            margin-bottom: 8vh; /* ขยับขึ้น 8% ของความสูง viewport */
+            margin-bottom: 8vh;
+        }
+        
+        /* AR Zoom Controls */
+        .ar-zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .ar-zoom-controls.visible {
+            opacity: 1;
+        }
+        
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(79, 70, 229, 0.3);
+            color: #4f46e5;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .zoom-btn:active {
+            transform: scale(0.9);
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .zoom-indicator {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .zoom-indicator.visible {
+            opacity: 1;
+        }
+        
+        /* AR Instructions */
+        .ar-instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            max-width: 280px;
+        }
+        
+        .ar-instructions.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .ar-instructions h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #60a5fa;
+        }
+        
+        .ar-instructions p {
+            margin: 5px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .ar-instructions .gesture-icon {
+            font-size: 32px;
+            margin: 10px 0;
         }
     </style>
 
@@ -263,29 +329,45 @@
 <div id="canvas-container"></div>
 <div id="loader" class="loader"></div>
 
+<!-- AR Zoom Controls -->
+<div id="arZoomControls" class="ar-zoom-controls">
+    <button class="zoom-btn" id="zoomOutBtn" title="ย่อ">−</button>
+    <button class="zoom-btn" id="zoomInBtn" title="ขยาย">+</button>
+</div>
+
+<!-- Zoom Indicator -->
+<div id="zoomIndicator" class="zoom-indicator">ขนาด: 100%</div>
+
+<!-- AR Instructions -->
+<div id="arInstructions" class="ar-instructions">
+    <h3>🥽 โหมด AR</h3>
+    <div class="gesture-icon">🤏</div>
+    <p><strong>บีบนิ้ว</strong> เพื่อซูมเข้า/ออก</p>
+    <p>หรือใช้ปุ่ม + − ด้านล่าง</p>
+    <button onclick="hideARInstructions()" style="margin-top: 15px; padding: 8px 20px; background: #4f46e5; color: white; border: none; border-radius: 20px; cursor: pointer;">เข้าใจแล้ว</button>
+</div>
+
 <!-- UI Layer -->
 <div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
     
     <!-- Header -->
     <div class="pointer-events-auto p-3 flex justify-between items-center bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm">
         <div class="text-slate-800 flex items-center gap-2">
-            <span class="text-xl">⚛️</span>
+            <span class="text-xl">⚱️</span>
             <div>
-                <h1 class="text-sm font-bold leading-none text-slate-900">ตารางธาตุ</h1>
-                <p class="text-[10px] opacity-70 text-slate-600">เลือกธาตุเพื่อดูโมเดล 3D</p>
+                <h1 class="text-sm font-bold leading-none text-slate-900">ตารางธาตุโลหะมีค่า </h1>
+                <p class="text-[10px] opacity-70 text-slate-600">ทองแดง เงิน ทอง</p>
             </div>
         </div>
         
-        <!-- ปุ่ม AR แบบ Custom -->
         <button id="arBtn" class="ar-button">
             <span class="ar-icon">🥽</span>
             <span>AR Mode</span>
         </button>
     </div>
 
-    <!-- Info Panel ขนาดเล็ก -->
+    <!-- Info Panel -->
     <div id="info-panel" class="info-panel glass-panel rounded-xl p-3 text-slate-800 pointer-events-auto hidden-panel">
-        <!-- ส่วนแสดงข้อมูล -->
         <div id="info-content">
             <div class="flex justify-between items-start mb-1.5">
                 <div>
@@ -307,18 +389,17 @@
         </div>
     </div>
     
-    <!-- ปุ่มเปิดข้อมูล (แสดงเมื่อปิด) -->
     <div id="info-toggle" class="fixed top-16 right-3 z-20 pointer-events-auto hidden">
         <button onclick="toggleInfo()" class="info-toggle-btn" title="แสดงข้อมูล">
             ℹ️
         </button>
     </div>
 
-    <!-- Periodic Table Grid - ขยับขึ้น 8% -->
+    <!-- Element Selection Grid - 3 ธาตุ -->
     <div class="pointer-events-auto p-2 periodic-table-container">
         <div class="gray-board max-w-[280px] mx-auto">
-            <div class="grid grid-cols-4 gap-1" id="periodic-grid">
-                <!-- 12 elements generated by JS -->
+            <div class="grid grid-cols-3 gap-1" id="periodic-grid">
+                <!-- 3 elements generated by JS -->
             </div>
         </div>
     </div>
@@ -329,39 +410,39 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// ✅ เก็บไว้แค่ 3 ธาตุ: ทองแดง เงิน ทอง
 const elementsData = {
-    'Ag': { number: 47, name: 'เงิน', modelFile: 'inmeg/silver.glb', category: 'transition', 
-           desc: 'โลหะมีค่าสีขาวเงางาม นำความร้อนและไฟฟ้าดีที่สุด ใช้ในเครื่องประดับและอิเล็กทรอนิกส์',  details: ['Z: 47', 'มวล: 107.87', 'จุดหลอม: 961.8°C'] },
-    'Au': { number: 79, name: 'ทองคำ', modelFile: 'inmeg/gold.glb', category: 'transition', 
-           desc: 'โลหะมีค่าสีเหลืองนวล ไม่เกิดออกซิเดชัน ใช้เป็นเครื่องประดับและสำรองเงินตรา',  details: ['Z: 79', 'มวล: 196.97', 'จุดหลอม: 1064°C'] },
-    'Mg': { number: 12, name: 'แม็กนิเซียม', modelFile: 'inmeg/magnesium.glb', category: 'alkaline', 
-           desc: 'โลหะเบาสีขาวเงิน ติดไฟได้ง่ายในอากาศ เป็นธาตุที่จำเป็นต่อร่างกาย ใช้ในอุตสาหกรรมโลหะผสมและยา',  details: ['Z: 12', 'มวล: 24.305', 'จุดหลอม: 650°C'] },
-    'S': { number: 16, name: 'กำมะถัน', modelFile: 'inmeg/sulfur.glb', category: 'nonmetal', 
-         desc: 'ธาตุไม่เป็นโลหะสีเหลือง มีกลิ่นเหมือนไข่เน่า ใช้ในอุตสาหกรรมยาง ดินปืน และยาฆ่าเชื้อ',  details: ['Z: 16', 'มวล: 32.06', 'จุดหลอม: 115.21°C'] },
-    'Al': { number: 13, name: 'อลูมิเนียม', modelFile: 'inmeg/aluminium.glb', category: 'post-transition', 
-            desc: 'โลหะเบา ทนต่อการกัดกร่อน นำความร้อนและไฟฟ้าดี', details: ['Z: 13', 'มวล: 26.98', 'จุดหลอม: 660°C'] },
-    'Ga': { number: 31, name: 'แกลเลียม', modelFile: 'inmeg/gallium.glb', category: 'post-transition', 
-        desc: 'โลหะสีเงินแวววาว หลอมเหลวที่อุณหภูมิต่ำกว่าร่างกาย (29.76°C) ใช้ในเซมิคอนดักเตอร์และโซลาร์เซลล์',  details: ['Z: 31', 'มวล: 69.723', 'จุดหลอม: 29.76°C'] },
-    'Sb': { number: 51, name: 'พลวง', modelFile: 'inmeg/antimony.glb', category: 'metalloid', 
-    desc: 'ธาตุกึ่งโลหะสีเงินอมน้ำเงิน เปราะและเปราะง่าย ใช้ผสมโลหะให้แข็งแรงและในอุตสาหกรรมแบตเตอรี่',   details: ['Z: 51', 'มวล: 121.760', 'จุดหลอม: 630.63°C'] },
-    'Ca': { number: 20, name: 'แคลเซียม', modelFile: 'inmeg/calcium.glb', category: 'alkaline', 
-            desc: 'โลหะสีเทาอ่อน แข็งแรง พบมากในกระดูกและหินปูน', details: ['Z: 20', 'มวล: 40.08', 'จุดหลอม: 842°C'] },
-    'Fe': { number: 26, name: 'เหล็ก', modelFile: 'inmeg/iron.glb', category: 'transition', 
-            desc: 'โลหะทรานซิชันสำคัญ แม่เหล็กได้ แข็งแรง', details: ['Z: 26', 'มวล: 55.85', 'จุดหลอม: 1538°C'] },
-    'Cu': { number: 29, name: 'ทองแดง', modelFile: 'inmeg/copper.glb', category: 'transition', 
-            desc: 'โลหะสีแดงอิฐ นำไฟฟ้าและความร้อนดีเยี่ยม', details: ['Z: 29', 'มวล: 63.55', 'จุดหลอม: 1085°C'] },
-    'Zn': { number: 30, name: 'สังกะสี', modelFile: 'inmeg/zinc.glb', category: 'post-transition', 
-            desc: 'โลหะสีเงินอมน้ำเงิน ใช้ชุบกันสนิม ผสมทองเหลือง', details: ['Z: 30', 'มวล: 65.38', 'จุดหลอม: 419.5°C'] },
-    'Pb': {  number: 82, name: 'ตะกั่ว', modelFile: 'inmeg/lead.glb', category: 'post-transition', 
-    desc: 'โลหะหนักสีเทาเงิน อ่อนนุ่ม ทนทานต่อการกัดกร่อน ใช้ในแบตเตอรี่และการป้องกันรังสี',  details: ['Z: 82', 'มวล: 207.2', 'จุดหลอม: 327.5°C'] 
-}
+    'Cu': { 
+        number: 29, 
+        name: 'ทองแดง', 
+        modelFile: 'inmeg/copper.glb', 
+        category: 'copper', 
+        desc: 'โลหะธาตุสีแดงอิฐ เป็นธาตุที่มีการนำไฟฟ้าและความร้อนสูง ใช้ในอุตสาหกรรมไฟฟ้าและท่อน้ำ',  
+        details: ['เลขอะตอม: 29', 'สัญลักษณ์: Cu', 'มวล: 63.55', 'จุดหลอม: 1,085°C'] 
+    },
+    'Ag': { 
+        number: 47, 
+        name: 'เงิน', 
+        modelFile: 'inmeg/silver.glb', 
+        category: 'silver', 
+        desc: 'โลหะธาตุสีขาวเงิน มีการสะท้อนแสงสูงที่สุดในบรรดาโลหะทั้งหมด ใช้ในเครื่องประดับและอิเล็กทรอนิกส์',  
+        details: ['เลขอะตอม: 47', 'สัญลักษณ์: Ag', 'มวล: 107.87', 'จุดหลอม: 961.8°C'] 
+    },
+    'Au': { 
+        number: 79, 
+        name: 'ทองคำ', 
+        modelFile: 'inmeg/gold.glb', 
+        category: 'gold', 
+        desc: 'โลหะธาตุสีเหลืองนวล มีค่าความถ่วงจำเพาะสูง ไม่เป็นสนิม ใช้เป็นเครื่องประดับและสำรองเงินตรา',  
+        details: ['เลขอะตอม: 79', 'สัญลักษณ์: Au', 'มวล: 196.97', 'จุดหลอม: 1,064°C'] 
+    }
 };
 
 let camera, scene, renderer, controls, loader;
 let currentModel = null;
 let isInfoVisible = false;
 
-// ⭐ AR Variables
+// AR Variables
 let controller;
 let reticle;
 let hitTestSource = null;
@@ -369,6 +450,16 @@ let hitTestSourceRequested = false;
 let currentModelPath = null;
 let xrSession = null;
 let isARActive = false;
+
+// AR Zoom Variables
+let arModels = [];
+let currentScale = 1.0;
+let isPinching = false;
+let initialPinchDistance = 0;
+let initialScale = 1.0;
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 3.0;
+const SCALE_STEP = 0.2;
 
 function init() {
     scene = new THREE.Scene();
@@ -410,7 +501,6 @@ function init() {
     fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
 
-    // ⭐ RETICLE (ซ่อนไว้ ไม่ต้องใช้)
     const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI/2);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.5 });
     
@@ -419,7 +509,6 @@ function init() {
     reticle.visible = false;
     scene.add(reticle);
 
-    // controller
     controller = renderer.xr.getController(0);
     controller.addEventListener('select', placeObject);
     scene.add(controller);
@@ -428,10 +517,12 @@ function init() {
     generateTable();
     window.addEventListener('resize', onWindowResize);
     
-    // ✅ ปุ่ม AR
     document.getElementById('arBtn').addEventListener('click', startAR);
+    document.getElementById('zoomInBtn').addEventListener('click', () => zoomARModel(SCALE_STEP));
+    document.getElementById('zoomOutBtn').addEventListener('click', () => zoomARModel(-SCALE_STEP));
     
-    // ✅ Auto Reset ตอนออก AR
+    setupTouchEvents();
+    
     renderer.xr.addEventListener('sessionend', () => {
         isARActive = false;
         reticle.visible = false;
@@ -439,16 +530,117 @@ function init() {
         hitTestSourceRequested = false;
         xrSession = null;
         
-        // ล้างโมเดลที่วางใน AR ออก (optional)
-        // clearARModels();
+        document.getElementById('arZoomControls').classList.remove('visible');
+        document.getElementById('zoomIndicator').classList.remove('visible');
+        
+        clearARModels();
         
         console.log('AR Session ended');
     });
     
+    // โหลดทองแดงเป็นค่าเริ่มต้น
+    setTimeout(() => selectElement('Cu'), 500);
+    
     animate();
 }
 
-// ✅ ฟังก์ชันเปิด AR Session - แสดงโมเดลทันที
+function setupTouchEvents() {
+    const canvas = document.getElementById('canvas-container');
+    
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+}
+
+function handleTouchStart(e) {
+    if (!isARActive || e.touches.length !== 2) return;
+    
+    e.preventDefault();
+    isPinching = true;
+    
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    
+    initialPinchDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+    );
+    
+    initialScale = currentScale;
+}
+
+function handleTouchMove(e) {
+    if (!isARActive || !isPinching || e.touches.length !== 2) return;
+    
+    e.preventDefault();
+    
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    
+    const currentDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+    );
+    
+    if (initialPinchDistance > 0) {
+        const scaleDelta = currentDistance / initialPinchDistance;
+        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, initialScale * scaleDelta));
+        
+        setARModelScale(newScale);
+    }
+}
+
+function handleTouchEnd(e) {
+    if (e.touches.length < 2) {
+        isPinching = false;
+        initialPinchDistance = 0;
+    }
+}
+
+function handleWheel(e) {
+    if (!isARActive) return;
+    
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP;
+    zoomARModel(delta);
+}
+
+function zoomARModel(delta) {
+    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, currentScale + delta));
+    setARModelScale(newScale);
+}
+
+function setARModelScale(scale) {
+    currentScale = scale;
+    
+    arModels.forEach(model => {
+        const baseScale = model.userData.baseScale || 1;
+        model.scale.setScalar(baseScale * currentScale);
+    });
+    
+    showZoomIndicator();
+}
+
+function showZoomIndicator() {
+    const indicator = document.getElementById('zoomIndicator');
+    indicator.textContent = `ขนาด: ${Math.round(currentScale * 100)}%`;
+    indicator.classList.add('visible');
+    
+    clearTimeout(window.zoomIndicatorTimeout);
+    window.zoomIndicatorTimeout = setTimeout(() => {
+        indicator.classList.remove('visible');
+    }, 2000);
+}
+
+function clearARModels() {
+    arModels.forEach(model => {
+        scene.remove(model);
+    });
+    arModels = [];
+    currentScale = 1.0;
+}
+
 async function startAR() {
     if (!navigator.xr) {
         alert('อุปกรณ์ไม่รองรับ WebXR');
@@ -462,7 +654,6 @@ async function startAR() {
     }
 
     try {
-        // ไม่ต้องใช้ hit-test แล้ว ลบออกจาก requiredFeatures
         const session = await navigator.xr.requestSession('immersive-ar', {
             requiredFeatures: ['dom-overlay'],
             domOverlay: { root: document.body }
@@ -474,11 +665,13 @@ async function startAR() {
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
         
-        // ⭐ แสดงโมเดลทันทีตรงกล้อง!
+        document.getElementById('arZoomControls').classList.add('visible');
+        document.getElementById('arInstructions').classList.add('visible');
+        
         if (currentModelPath) {
             setTimeout(() => {
                 placeModelInFrontOfCamera();
-            }, 500); // รอให้ session พร้อมสักนิด
+            }, 500);
         }
 
     } catch (err) {
@@ -487,37 +680,38 @@ async function startAR() {
     }
 }
 
-// ⭐ ฟังก์ชันใหม่: วางโมเดลตรงหน้ากล้องทันที
+window.hideARInstructions = function() {
+    document.getElementById('arInstructions').classList.remove('visible');
+}
+
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
+
+    clearARModels();
 
     loader.load(currentModelPath, (gltf) => {
         const model = gltf.scene;
         
-        // ปรับขนาดให้เหมาะกับ AR
         const box = new THREE.Box3().setFromObject(model);
         const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
-        const scale = 0.5 / maxDim; // ขนาดกำลังดีสำหรับ AR
+        const baseScale = 0.5 / maxDim;
         
-        model.scale.setScalar(scale);
+        model.userData.baseScale = baseScale;
+        model.userData.isARModel = true;
         
-        // วางตรงหน้ากล้อง ระยะ 1.5 เมตร
         const cameraPosition = new THREE.Vector3();
         const cameraDirection = new THREE.Vector3();
         camera.getWorldPosition(cameraPosition);
         camera.getWorldDirection(cameraDirection);
         
-        // คำนวณตำแหน่ง 1.5 เมตรหน้ากล้อง
         const distance = 1.5;
         const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(distance));
-        
-        // วางที่ความสูงพื้น (y = 0) หรือตามกล้องก็ได้
-        targetPosition.y = 0; // วางบนพื้น
+        targetPosition.y = 0;
         
         model.position.copy(targetPosition);
-        
-        // หมุนให้หันเข้าหากล้อง
         model.lookAt(cameraPosition.x, model.position.y, cameraPosition.z);
+        
+        model.scale.setScalar(baseScale * currentScale);
         
         model.traverse(c => { 
             if(c.isMesh) { 
@@ -526,35 +720,30 @@ function placeModelInFrontOfCamera() {
             }
         });
         
-        // ตั้งชื่อให้รู้ว่าเป็นโมเดล AR
-        model.userData.isARModel = true;
         scene.add(model);
+        arModels.push(model);
         
-        // เอฟเฟกต์ปรากฏ
-        model.scale.setScalar(0);
-        let s = 0;
-        const entry = setInterval(() => {
-            s += 0.1;
-            model.scale.setScalar(s * scale);
-            if(s >= 1) {
-                clearInterval(entry);
-            }
-        }, 30);
-        
-        console.log('Model placed at:', model.position);
+        animateModelEntry(model, baseScale * currentScale);
         
     }, undefined, (error) => {
         console.error('Error loading AR model:', error);
     });
 }
 
-// ฟังก์ชันเดิมสำหรับ hit-test (ยังเก็บไว้ถ้าต้องการใช้งานร่วม)
+function animateModelEntry(model, targetScale) {
+    model.scale.setScalar(0);
+    let s = 0;
+    const entry = setInterval(() => {
+        s += 0.1;
+        model.scale.setScalar(s * targetScale);
+        if(s >= 1) {
+            clearInterval(entry);
+        }
+    }, 30);
+}
+
 function placeObject() {
-    // ถ้าไม่ได้ใช้ hit-test แล้ว สามารถลบฟังก์ชันนี้ได้
-    // หรือใช้สำหรับวางโมเดลเพิ่มเมื่อแตะหน้าจอ
     if (!isARActive || !currentModelPath) return;
-    
-    // วางโมเดลเพิ่มตรงหน้ากล้องอีกอัน
     placeModelInFrontOfCamera();
 }
 
@@ -586,7 +775,7 @@ function selectElement(symbol) {
     document.getElementById('info-name').textContent = data.name;
     
     const categoryEl = document.getElementById('info-category');
-    categoryEl.textContent = getCategoryTh(data.category);
+    categoryEl.textContent = 'โลหะธาตุ';
     categoryEl.className = `inline-block px-1.5 py-0.5 rounded-full text-[9px] mb-1.5 font-medium text-white shadow-sm cat-${data.category}`;
     
     document.getElementById('info-desc').textContent = data.desc;
@@ -600,7 +789,6 @@ function selectElement(symbol) {
     
     loadModel(data.modelFile);
     
-    // ⭐ ถ้ากำลังอยู่ใน AR ให้แสดงโมเดลใหม่ทันที
     if (isARActive) {
         setTimeout(() => {
             placeModelInFrontOfCamera();
@@ -608,13 +796,7 @@ function selectElement(symbol) {
     }
 }
 
-function getCategoryTh(cat) {
-    const map = { 'nonmetal': 'อโลหะ', 'noble': 'แก๊สมีตระกูล', 'alkaline': 'อัลคาไลน์', 
-                  'metalloid': 'กึ่งโลหะ', 'transition': 'โลหะทรานซิชัน', 'post-transition': 'โลหะหลังทรานซิชัน' };
-    return map[cat] || cat;
-}
-
-function toggleInfo() {
+window.toggleInfo = function() {
     isInfoVisible = !isInfoVisible;
     const panel = document.getElementById('info-panel');
     const toggle = document.getElementById('info-toggle');
@@ -700,7 +882,6 @@ function animate() {
 }
 
 function render(timestamp, frame) {
-    // ไม่ต้องใช้ hit-test แล้ว แต่เก็บไว้ถ้าอยากใช้ร่วม
     if (frame && hitTestSource) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const hitTestResults = frame.getHitTestResults(hitTestSource);
@@ -717,19 +898,13 @@ function render(timestamp, frame) {
 
     controls.update();
     
-    // หมุนโมเดลที่วางใน AR (optional)
-    scene.traverse((obj) => {
-        if (obj.userData.isARModel && obj !== currentModel) {
-            obj.rotation.y += 0.005;
-        }
+    arModels.forEach(model => {
+        model.rotation.y += 0.005;
     });
     
-    if (currentModel) currentModel.rotation.y += 0.003;
+    if (currentModel && !isARActive) currentModel.rotation.y += 0.003;
     renderer.render(scene, camera);
 }
-
-// Global functions for onclick handlers
-window.toggleInfo = toggleInfo;
 
 init();
 </script>
