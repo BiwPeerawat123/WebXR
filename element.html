@@ -323,7 +323,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-// ✅ ลบ ARButton ออก - ไม่ import แล้ว
 
 const elementsData = {
     'Ag': { number: 47, name: 'เงิน', modelFile: 'inmeg/silver.glb', category: 'transition', 
@@ -364,6 +363,7 @@ let hitTestSource = null;
 let hitTestSourceRequested = false;
 let currentModelPath = null;
 let xrSession = null;
+let isARActive = false;
 
 function init() {
     scene = new THREE.Scene();
@@ -371,7 +371,6 @@ function init() {
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 5);
 
-    // ✅ ใช้ preserveDrawingBuffer: true สำคัญมากสำหรับ AR
     renderer = new THREE.WebGLRenderer({ 
         antialias: true, 
         alpha: true,
@@ -383,7 +382,6 @@ function init() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setClearColor(0x000000, 0);
     
-    // ⭐ เปิด XR
     renderer.xr.enabled = true;
     
     document.getElementById('canvas-container').appendChild(renderer.domElement);
@@ -407,9 +405,9 @@ function init() {
     fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
 
-    // ⭐ RETICLE
+    // ⭐ RETICLE (ซ่อนไว้ ไม่ต้องใช้)
     const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI/2);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.5 });
     
     reticle = new THREE.Mesh(ringGeo, ringMat);
     reticle.matrixAutoUpdate = false;
@@ -425,22 +423,27 @@ function init() {
     generateTable();
     window.addEventListener('resize', onWindowResize);
     
-    // ✅ แก้ปุ่ม AR ให้เปิด Session แบบ A-Frame (ไม่ใช้ ARButton)
+    // ✅ ปุ่ม AR
     document.getElementById('arBtn').addEventListener('click', startAR);
     
-    // ✅ Auto Reset ตอนออก AR (เหมือน A-Frame)
+    // ✅ Auto Reset ตอนออก AR
     renderer.xr.addEventListener('sessionend', () => {
+        isARActive = false;
         reticle.visible = false;
         hitTestSource = null;
         hitTestSourceRequested = false;
         xrSession = null;
-        console.log('AR Session ended - reset complete');
+        
+        // ล้างโมเดลที่วางใน AR ออก (optional)
+        // clearARModels();
+        
+        console.log('AR Session ended');
     });
     
     animate();
 }
 
-// ✅ ฟังก์ชันเปิด AR Session แบบ A-Frame
+// ✅ ฟังก์ชันเปิด AR Session - แสดงโมเดลทันที
 async function startAR() {
     if (!navigator.xr) {
         alert('อุปกรณ์ไม่รองรับ WebXR');
@@ -448,33 +451,106 @@ async function startAR() {
     }
 
     const supported = await navigator.xr.isSessionSupported('immersive-ar');
-
     if (!supported) {
         alert('มือถือเครื่องนี้ใช้ AR ไม่ได้');
         return;
     }
 
     try {
-        // ใช้ dom-overlay เพื่อให้ UI ยังเห็นได้ใน AR
+        // ไม่ต้องใช้ hit-test แล้ว ลบออกจาก requiredFeatures
         const session = await navigator.xr.requestSession('immersive-ar', {
-            requiredFeatures: ['hit-test', 'dom-overlay'],
+            requiredFeatures: ['dom-overlay'],
             domOverlay: { root: document.body }
         });
 
         xrSession = session;
+        isARActive = true;
         
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
         
-        // 🔥 Pro Tip: บอกผู้ใช้ให้ขยับมือถือ (UX ดีขึ้น)
-        setTimeout(() => {
-            alert("ขยับมือถือเพื่อค้นหาพื้นก่อนวางโมเดล");
-        }, 500);
+        // ⭐ แสดงโมเดลทันทีตรงกล้อง!
+        if (currentModelPath) {
+            setTimeout(() => {
+                placeModelInFrontOfCamera();
+            }, 500); // รอให้ session พร้อมสักนิด
+        }
 
     } catch (err) {
         console.error('AR Error:', err);
         alert('เข้า AR ไม่สำเร็จ: ' + err.message);
     }
+}
+
+// ⭐ ฟังก์ชันใหม่: วางโมเดลตรงหน้ากล้องทันที
+function placeModelInFrontOfCamera() {
+    if (!currentModelPath || !isARActive) return;
+
+    loader.load(currentModelPath, (gltf) => {
+        const model = gltf.scene;
+        
+        // ปรับขนาดให้เหมาะกับ AR
+        const box = new THREE.Box3().setFromObject(model);
+        const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+        const scale = 0.5 / maxDim; // ขนาดกำลังดีสำหรับ AR
+        
+        model.scale.setScalar(scale);
+        
+        // วางตรงหน้ากล้อง ระยะ 1.5 เมตร
+        const cameraPosition = new THREE.Vector3();
+        const cameraDirection = new THREE.Vector3();
+        camera.getWorldPosition(cameraPosition);
+        camera.getWorldDirection(cameraDirection);
+        
+        // คำนวณตำแหน่ง 1.5 เมตรหน้ากล้อง
+        const distance = 1.5;
+        const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(distance));
+        
+        // วางที่ความสูงพื้น (y = 0) หรือตามกล้องก็ได้
+        targetPosition.y = 0; // วางบนพื้น
+        
+        model.position.copy(targetPosition);
+        
+        // หมุนให้หันเข้าหากล้อง
+        model.lookAt(cameraPosition.x, model.position.y, cameraPosition.z);
+        
+        model.traverse(c => { 
+            if(c.isMesh) { 
+                c.castShadow = true; 
+                c.receiveShadow = true; 
+            }
+        });
+        
+        // ตั้งชื่อให้รู้ว่าเป็นโมเดล AR
+        model.userData.isARModel = true;
+        scene.add(model);
+        
+        // เอฟเฟกต์ปรากฏ
+        model.scale.setScalar(0);
+        let s = 0;
+        const entry = setInterval(() => {
+            s += 0.1;
+            model.scale.setScalar(s * scale);
+            if(s >= 1) {
+                clearInterval(entry);
+            }
+        }, 30);
+        
+        console.log('Model placed at:', model.position);
+        
+    }, undefined, (error) => {
+        console.error('Error loading AR model:', error);
+    });
+}
+
+// ฟังก์ชันเดิมสำหรับ hit-test (ยังเก็บไว้ถ้าต้องการใช้งานร่วม)
+function placeObject() {
+    // ถ้าไม่ได้ใช้ hit-test แล้ว สามารถลบฟังก์ชันนี้ได้
+    // หรือใช้สำหรับวางโมเดลเพิ่มเมื่อแตะหน้าจอ
+    if (!isARActive || !currentModelPath) return;
+    
+    // วางโมเดลเพิ่มตรงหน้ากล้องอีกอัน
+    placeModelInFrontOfCamera();
 }
 
 function generateTable() {
@@ -501,7 +577,6 @@ function selectElement(symbol) {
     const data = elementsData[symbol];
     if (!data) return;
 
-    // Update Info Panel
     document.getElementById('info-symbol').textContent = symbol;
     document.getElementById('info-name').textContent = data.name;
     
@@ -514,13 +589,18 @@ function selectElement(symbol) {
         `<li class="flex items-center gap-1"><span class="text-blue-500 text-[8px]">•</span> ${d}</li>`
     ).join('');
     
-    // Show Info Panel
     showInfo();
     
-    // จำโมเดลที่เลือก
     currentModelPath = data.modelFile;
     
     loadModel(data.modelFile);
+    
+    // ⭐ ถ้ากำลังอยู่ใน AR ให้แสดงโมเดลใหม่ทันที
+    if (isARActive) {
+        setTimeout(() => {
+            placeModelInFrontOfCamera();
+        }, 100);
+    }
 }
 
 function getCategoryTh(cat) {
@@ -577,7 +657,6 @@ function loadModel(filePath) {
         });
         scene.add(currentModel);
         
-        // Entry animation
         let s = 0;
         const entry = setInterval(() => {
             s += 0.1;
@@ -592,7 +671,6 @@ function loadModel(filePath) {
         console.error('Error loading model:', error);
         document.getElementById('loader').style.display = 'none';
         
-        // Fallback geometry
         const geo = new THREE.IcosahedronGeometry(0.8, 2);
         const mat = new THREE.MeshStandardMaterial({ 
             color: 0x3b82f6, 
@@ -603,33 +681,6 @@ function loadModel(filePath) {
         });
         currentModel = new THREE.Mesh(geo, mat);
         scene.add(currentModel);
-    });
-}
-
-// ฟังก์ชันวางโมเดลใน AR
-function placeObject() {
-    if (!reticle.visible || !currentModelPath) return;
-
-    loader.load(currentModelPath, (gltf) => {
-        const model = gltf.scene;
-        
-        // ปรับขนาดให้เหมาะกับ AR (เล็กกว่าใน 3D mode)
-        model.scale.set(0.3, 0.3, 0.3);
-        model.position.setFromMatrixPosition(reticle.matrix);
-        model.quaternion.setFromRotationMatrix(reticle.matrix);
-        
-        // ทำให้โมเดลวางบนพื้น
-        model.traverse(c => { 
-            if(c.isMesh) { 
-                c.castShadow = true; 
-                c.receiveShadow = true; 
-            }
-        });
-        
-        scene.add(model);
-        
-        // เอฟเฟกต์วางโมเดลสำเร็จ (optional)
-        console.log('Model placed at:', model.position);
     });
 }
 
@@ -644,41 +695,30 @@ function animate() {
 }
 
 function render(timestamp, frame) {
-    if (frame) {
+    // ไม่ต้องใช้ hit-test แล้ว แต่เก็บไว้ถ้าอยากใช้ร่วม
+    if (frame && hitTestSource) {
         const referenceSpace = renderer.xr.getReferenceSpace();
-        const session = renderer.xr.getSession();
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
 
-        if (hitTestSourceRequested === false) {
-            session.requestReferenceSpace('viewer').then((refSpace) => {
-                session.requestHitTestSource({ space: refSpace }).then((source) => {
-                    hitTestSource = source;
-                });
-            });
-
-            session.addEventListener('end', () => {
-                hitTestSourceRequested = false;
-                hitTestSource = null;
-            });
-
-            hitTestSourceRequested = true;
-        }
-
-        if (hitTestSource) {
-            const hitTestResults = frame.getHitTestResults(hitTestSource);
-
-            if (hitTestResults.length) {
-                const hit = hitTestResults[0];
-                const pose = hit.getPose(referenceSpace);
-
-                reticle.visible = true;
-                reticle.matrix.fromArray(pose.transform.matrix);
-            } else {
-                reticle.visible = false;
-            }
+        if (hitTestResults.length) {
+            const hit = hitTestResults[0];
+            const pose = hit.getPose(referenceSpace);
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+        } else {
+            reticle.visible = false;
         }
     }
 
     controls.update();
+    
+    // หมุนโมเดลที่วางใน AR (optional)
+    scene.traverse((obj) => {
+        if (obj.userData.isARModel && obj !== currentModel) {
+            obj.rotation.y += 0.005;
+        }
+    });
+    
     if (currentModel) currentModel.rotation.y += 0.003;
     renderer.render(scene, camera);
 }
