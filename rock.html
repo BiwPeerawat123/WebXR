@@ -332,6 +332,67 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.8; }
         }
+
+        /* Scale indicator */
+        .scale-indicator {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .scale-indicator.visible {
+            opacity: 1;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            backdrop-filter: blur(4px);
+        }
+
+        .loading-overlay.visible {
+            display: flex;
+        }
+
+        .loading-text {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
     </style>
 
     <script type="importmap">
@@ -347,6 +408,14 @@
 
 <div id="canvas-container"></div>
 <div id="loader" class="loader"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-text">
+        <div class="loading-spinner"></div>
+        <div>กำลังโหลดโมเดล...</div>
+    </div>
+</div>
 
 <div id="ar-indicator" class="ar-mode-indicator">
     <span>🥽</span>
@@ -367,6 +436,8 @@
 <button id="reset-scale" class="reset-scale-btn">
     ↺ รีเซ็ตขนาด
 </button>
+
+<div id="scale-indicator" class="scale-indicator">100%</div>
 
 <div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
     
@@ -484,14 +555,26 @@ let currentModelPath = null;
 let xrSession = null;
 let isARActive = false;
 
-let arModelScale = 1.0;
-let baseScale = 0.5;
+// ⭐ ตัวแปรสำหรับ Smooth Zoom
 let currentARModel = null;
-let initialPinchDistance = 0;
-let initialScale = 1.0;
-let isPinching = false;
+let baseScale = 0.5;
+let currentScale = 1.0;
+let targetScale = 1.0;
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 3.0;
+const ZOOM_STEP = 1.25;
+const SMOOTH_FACTOR = 0.15;
 
+let initialPinchDistance = 0;
+let initialPinchScale = 1.0;
+let isPinching = false;
 let touches = new Map();
+
+// ⭐ 1. Loading Lock - กันโหลดซ้อน
+let isLoadingARModel = false;
+
+// ⭐ 2. Model Cache - เก็บโมเดลที่โหลดแล้ว
+const modelCache = {};
 
 function init() {
     scene = new THREE.Scene();
@@ -542,7 +625,8 @@ function init() {
     scene.add(reticle);
 
     controller = renderer.xr.getController(0);
-    controller.addEventListener('select', placeObject);
+    // ⭐ 3. ปิด controller select ชั่วคราวเพื่อป้องกัน spawn ซ้อน
+    // controller.addEventListener('select', placeObject);
     scene.add(controller);
 
     loader = new GLTFLoader();
@@ -560,18 +644,66 @@ function init() {
         hitTestSource = null;
         hitTestSourceRequested = false;
         xrSession = null;
-        currentARModel = null;
         
-        document.getElementById('ar-indicator').classList.remove('active');
-        document.getElementById('ar-controls').classList.remove('active');
-        document.getElementById('zoom-controls').classList.remove('active');
-        document.getElementById('reset-scale').classList.remove('active');
+        // ⭐ รีเซ็ต loading lock เมื่อออกจาก AR
+        isLoadingARModel = false;
+        document.getElementById('loadingOverlay').classList.remove('visible');
+        
+        resetToNormalMode();
     });
     
-    // โหลดหินเริ่มต้นเป็น Basalt แทน Granite
     setTimeout(() => selectRock('basalt'), 500);
     
     animate();
+}
+
+// ⭐ ฟังก์ชันโหลด GLB แบบมี cache
+function loadGLB(path, callback) {
+    // ถ้ามีใน cache แล้ว ใช้ clone ทันที
+    if (modelCache[path]) {
+        console.log('Using cached model:', path);
+        callback(modelCache[path].clone());
+        return;
+    }
+
+    // ถ้ายังไม่มี โหลดใหม่
+    console.log('Loading new model:', path);
+    document.getElementById('loadingOverlay').classList.add('visible');
+    
+    loader.load(path, (gltf) => {
+        // เก็บใน cache
+        modelCache[path] = gltf.scene;
+        document.getElementById('loadingOverlay').classList.remove('visible');
+        callback(gltf.scene.clone());
+    }, undefined, (err) => {
+        console.error('Error loading model:', err);
+        document.getElementById('loadingOverlay').classList.remove('visible');
+        callback(null);
+    });
+}
+
+function resetToNormalMode() {
+    document.getElementById('ar-indicator').classList.remove('active');
+    document.getElementById('ar-controls').classList.remove('active');
+    document.getElementById('zoom-controls').classList.remove('active');
+    document.getElementById('reset-scale').classList.remove('active');
+    document.getElementById('scale-indicator').classList.remove('visible');
+    
+    if (currentARModel) {
+        scene.remove(currentARModel);
+        currentARModel = null;
+    }
+    
+    currentScale = 1.0;
+    targetScale = 1.0;
+    baseScale = 0.5;
+    
+    if (currentModelPath) {
+        loadModel(currentModelPath);
+    }
+    
+    camera.position.set(0, 0, 4);
+    controls.reset();
 }
 
 function setupZoomControls() {
@@ -581,18 +713,60 @@ function setupZoomControls() {
     
     zoomInBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        adjustScale(1.2);
+        zoomIn();
     });
     
     zoomOutBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        adjustScale(0.8);
+        zoomOut();
     });
     
     resetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        resetScale();
+        resetZoom();
     });
+}
+
+function zoomIn() {
+    targetScale *= ZOOM_STEP;
+    clampTargetScale();
+    showScaleIndicator();
+}
+
+function zoomOut() {
+    targetScale *= (1 / ZOOM_STEP);
+    clampTargetScale();
+    showScaleIndicator();
+}
+
+function resetZoom() {
+    targetScale = 1.0;
+    showScaleIndicator();
+}
+
+function clampTargetScale() {
+    targetScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
+}
+
+function showScaleIndicator() {
+    const indicator = document.getElementById('scale-indicator');
+    indicator.textContent = `${Math.round(targetScale * 100)}%`;
+    indicator.classList.add('visible');
+    
+    clearTimeout(window.scaleIndicatorTimeout);
+    window.scaleIndicatorTimeout = setTimeout(() => {
+        indicator.classList.remove('visible');
+    }, 1500);
+    
+    updateZoomButtonStates();
+}
+
+function updateZoomButtonStates() {
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomInBtn = document.getElementById('zoom-in');
+    
+    zoomOutBtn.disabled = targetScale <= MIN_SCALE;
+    zoomInBtn.disabled = targetScale >= MAX_SCALE;
 }
 
 function setupTouchEvents() {
@@ -621,7 +795,7 @@ function handleTouchStart(e) {
             touchArray[0].clientX, touchArray[0].clientY,
             touchArray[1].clientX, touchArray[1].clientY
         );
-        initialScale = arModelScale;
+        initialPinchScale = targetScale;
         e.preventDefault();
     }
 }
@@ -638,10 +812,10 @@ function handleTouchMove(e) {
     );
     
     const scaleRatio = currentDistance / initialPinchDistance;
-    const newScale = initialScale * scaleRatio;
+    targetScale = initialPinchScale * scaleRatio;
     
-    arModelScale = Math.max(0.1, Math.min(5.0, newScale));
-    updateARModelScale();
+    clampTargetScale();
+    showScaleIndicator();
 }
 
 function handleTouchEnd(e) {
@@ -666,37 +840,6 @@ function getDistance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
-function adjustScale(factor) {
-    if (!currentARModel) return;
-    
-    arModelScale *= factor;
-    arModelScale = Math.max(0.1, Math.min(5.0, arModelScale));
-    updateARModelScale();
-}
-
-function resetScale() {
-    if (!currentARModel) return;
-    
-    arModelScale = 1.0;
-    updateARModelScale();
-}
-
-function updateARModelScale() {
-    if (!currentARModel) return;
-    
-    const finalScale = baseScale * arModelScale;
-    currentARModel.scale.setScalar(finalScale);
-    updateZoomButtonStates();
-}
-
-function updateZoomButtonStates() {
-    const zoomOutBtn = document.getElementById('zoom-out');
-    const zoomInBtn = document.getElementById('zoom-in');
-    
-    zoomOutBtn.disabled = arModelScale <= 0.1;
-    zoomInBtn.disabled = arModelScale >= 5.0;
-}
-
 async function startAR() {
     if (!navigator.xr) {
         alert('อุปกรณ์ไม่รองรับ WebXR');
@@ -717,7 +860,9 @@ async function startAR() {
 
         xrSession = session;
         isARActive = true;
-        arModelScale = 1.0;
+        
+        currentScale = 1.0;
+        targetScale = 1.0;
         
         document.getElementById('ar-indicator').classList.add('active');
         document.getElementById('ar-controls').classList.add('active');
@@ -726,6 +871,11 @@ async function startAR() {
         
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
+        
+        if (currentModel) {
+            scene.remove(currentModel);
+            currentModel = null;
+        }
         
         if (currentModelPath) {
             setTimeout(() => {
@@ -739,22 +889,39 @@ async function startAR() {
     }
 }
 
+// ⭐ แก้ placeModelInFrontOfCamera ให้มี loading lock
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
+    
+    // ⭐ กันโหลดซ้อน
+    if (isLoadingARModel) {
+        console.log('Already loading model, skipping...');
+        return;
+    }
+    
+    isLoadingARModel = true;
 
+    // ล้างโมเดลเก่าก่อน
     if (currentARModel) {
         scene.remove(currentARModel);
         currentARModel = null;
     }
 
-    loader.load(currentModelPath, (gltf) => {
-        const model = gltf.scene;
-        
+    // ⭐ ใช้ loadGLB แทน loader.load โดยตรง
+    loadGLB(currentModelPath, (model) => {
+        if (!model) {
+            isLoadingARModel = false;
+            return;
+        }
+
         const box = new THREE.Box3().setFromObject(model);
         const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
         baseScale = 0.5 / maxDim;
         
-        model.scale.setScalar(baseScale * arModelScale);
+        currentScale = 1.0;
+        targetScale = 1.0;
+        
+        model.scale.setScalar(baseScale * currentScale);
         
         const cameraPosition = new THREE.Vector3();
         const cameraDirection = new THREE.Vector3();
@@ -779,25 +946,29 @@ function placeModelInFrontOfCamera() {
         currentARModel = model;
         scene.add(model);
         
+        // Animation เข้า
         model.scale.setScalar(0);
         let s = 0;
         const entry = setInterval(() => {
             s += 0.1;
-            model.scale.setScalar(s * baseScale * arModelScale);
+            model.scale.setScalar(s * baseScale * currentScale);
             if(s >= 1) {
                 clearInterval(entry);
                 updateZoomButtonStates();
             }
         }, 30);
         
-    }, undefined, (error) => {
-        console.error('Error loading AR model:', error);
+        // ⭐ ปลดล็อกหลังโหลดเสร็จ
+        isLoadingARModel = false;
     });
 }
 
+// ⭐ ปิดการใช้งานชั่วคราวเพราะยังไม่มี hit-test จริง
 function placeObject() {
-    if (!isARActive || !currentModelPath) return;
-    placeModelInFrontOfCamera();
+    // ไม่ทำอะไรจนกว่าจะ implement hit-test จริง
+    console.log('placeObject disabled - waiting for hit-test implementation');
+    // if (!isARActive || !currentModelPath) return;
+    // placeModelInFrontOfCamera();
 }
 
 function generateTable() {
@@ -866,6 +1037,7 @@ function showInfo() {
     document.getElementById('info-toggle').classList.add('hidden');
 }
 
+// ⭐ แก้ loadModel ให้ใช้ cache ด้วย
 function loadModel(filePath) {
     if (currentModel) {
         scene.remove(currentModel);
@@ -873,9 +1045,24 @@ function loadModel(filePath) {
     }
     document.getElementById('loader').style.display = 'block';
     
-    loader.load(filePath, (gltf) => {
+    loadGLB(filePath, (model) => {
         document.getElementById('loader').style.display = 'none';
-        currentModel = gltf.scene;
+        
+        if (!model) {
+            // สร้างโมเดลสำรองถ้าโหลดไม่สำเร็จ
+            const geo = new THREE.DodecahedronGeometry(0.8, 1);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0x8b5cf6, 
+                roughness: 0.4, 
+                metalness: 0.3
+            });
+            currentModel = new THREE.Mesh(geo, mat);
+            currentModel.position.y = 0.5;
+            scene.add(currentModel);
+            return;
+        }
+
+        currentModel = model;
         
         const box = new THREE.Box3().setFromObject(currentModel);
         const center = box.getCenter(new THREE.Vector3());
@@ -904,19 +1091,6 @@ function loadModel(filePath) {
                 currentModel.rotation.y = 0;
             }
         }, 16);
-    }, undefined, (error) => {
-        console.error('Error loading model:', error);
-        document.getElementById('loader').style.display = 'none';
-        
-        const geo = new THREE.DodecahedronGeometry(0.8, 1);
-        const mat = new THREE.MeshStandardMaterial({ 
-            color: 0x8b5cf6, 
-            roughness: 0.4, 
-            metalness: 0.3
-        });
-        currentModel = new THREE.Mesh(geo, mat);
-        currentModel.position.y = 0.5;
-        scene.add(currentModel);
     });
 }
 
@@ -947,7 +1121,10 @@ function render(timestamp, frame) {
 
     controls.update();
     
-    if (currentARModel) {
+    if (currentARModel && isARActive) {
+        currentScale += (targetScale - currentScale) * SMOOTH_FACTOR;
+        const finalScale = baseScale * currentScale;
+        currentARModel.scale.setScalar(finalScale);
         currentARModel.rotation.y += 0.002;
     }
     

@@ -254,6 +254,11 @@
             color: white;
         }
         
+        .zoom-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
         .zoom-indicator {
             position: fixed;
             bottom: 80px;
@@ -313,6 +318,71 @@
             font-size: 32px;
             margin: 10px 0;
         }
+
+        /* Hand tracking status indicator */
+        .hand-tracking-status {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            color: #4ade80;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hand-tracking-status.visible {
+            opacity: 1;
+        }
+
+        .hand-tracking-status .dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            backdrop-filter: blur(4px);
+        }
+
+        .loading-overlay.visible {
+            display: flex;
+        }
+
+        .loading-text {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
     </style>
 
     <script type="importmap">
@@ -329,6 +399,11 @@
 <div id="canvas-container"></div>
 <div id="loader" class="loader"></div>
 
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-text">กำลังโหลดโมเดล...</div>
+</div>
+
 <!-- AR Zoom Controls -->
 <div id="arZoomControls" class="ar-zoom-controls">
     <button class="zoom-btn" id="zoomOutBtn" title="ย่อ">−</button>
@@ -338,11 +413,17 @@
 <!-- Zoom Indicator -->
 <div id="zoomIndicator" class="zoom-indicator">ขนาด: 100%</div>
 
+<!-- Hand Tracking Status -->
+<div id="handTrackingStatus" class="hand-tracking-status">
+    <span class="dot"></span>
+    <span>ตรวจจับมือแล้ว - บีบนิ้วเพื่อซูม</span>
+</div>
+
 <!-- AR Instructions -->
 <div id="arInstructions" class="ar-instructions">
     <h3>🥽 โหมด AR</h3>
     <div class="gesture-icon">🤏</div>
-    <p><strong>บีบนิ้ว</strong> เพื่อซูมเข้า/ออก</p>
+    <p><strong>บีบนิ้วโป้งกับนิ้วชี้</strong> เพื่อซูมเข้า/ออก</p>
     <p>หรือใช้ปุ่ม + − ด้านล่าง</p>
     <button onclick="hideARInstructions()" style="margin-top: 15px; padding: 8px 20px; background: #4f46e5; color: white; border: none; border-radius: 20px; cursor: pointer;">เข้าใจแล้ว</button>
 </div>
@@ -355,7 +436,7 @@
         <div class="text-slate-800 flex items-center gap-2">
             <span class="text-xl">⚱️</span>
             <div>
-                <h1 class="text-sm font-bold leading-none text-slate-900">ตารางธาตุโลหะมีค่า </h1>
+                <h1 class="text-sm font-bold leading-none text-slate-900">ตารางธาตุโลหะมีค่า</h1>
                 <p class="text-[10px] opacity-70 text-slate-600">ทองแดง เงิน ทอง</p>
             </div>
         </div>
@@ -454,12 +535,19 @@ let isARActive = false;
 // AR Zoom Variables
 let arModels = [];
 let currentScale = 1.0;
-let isPinching = false;
-let initialPinchDistance = 0;
-let initialScale = 1.0;
-const MIN_SCALE = 0.3;
+const MIN_SCALE = 0.5;  // ⭐ ปรับจาก 0.3 เป็น 0.5
 const MAX_SCALE = 3.0;
-const SCALE_STEP = 0.2;
+const SCALE_STEP = 0.25; // ⭐ ปรับให้ซูมนุ่มนวลขึ้น
+
+// ⭐ XR Hand Tracking Pinch Variables
+let lastPinchDistance = null;
+let isHandTrackingActive = false;
+
+// ⭐ 1. เพิ่ม flag คุมการโหลด
+let isPlacingModel = false;
+
+// ⭐ 2. สร้าง model cache
+const modelCache = {};
 
 function init() {
     scene = new THREE.Scene();
@@ -521,8 +609,6 @@ function init() {
     document.getElementById('zoomInBtn').addEventListener('click', () => zoomARModel(SCALE_STEP));
     document.getElementById('zoomOutBtn').addEventListener('click', () => zoomARModel(-SCALE_STEP));
     
-    setupTouchEvents();
-    
     renderer.xr.addEventListener('sessionend', () => {
         isARActive = false;
         reticle.visible = false;
@@ -530,12 +616,14 @@ function init() {
         hitTestSourceRequested = false;
         xrSession = null;
         
-        document.getElementById('arZoomControls').classList.remove('visible');
-        document.getElementById('zoomIndicator').classList.remove('visible');
+        // ⭐ รีเซ็ต flag ด้วย
+        isPlacingModel = false;
+        document.getElementById('loadingOverlay').classList.remove('visible');
         
-        clearARModels();
+        // ⭐ รีเซ็ต: กลับไปโหมด 3D ปกติ แสดงโมเดลอันเดียวแบบต้นแบบ
+        resetToNormalMode();
         
-        console.log('AR Session ended');
+        console.log('AR Session ended - Reset to normal mode');
     });
     
     // โหลดทองแดงเป็นค่าเริ่มต้น
@@ -544,66 +632,109 @@ function init() {
     animate();
 }
 
-function setupTouchEvents() {
-    const canvas = document.getElementById('canvas-container');
+// ⭐ ฟังก์ชันรีเซ็ตกลับไปโหมดปกติ
+function resetToNormalMode() {
+    // ซ่อน UI ของ AR
+    document.getElementById('arZoomControls').classList.remove('visible');
+    document.getElementById('zoomIndicator').classList.remove('visible');
+    document.getElementById('handTrackingStatus').classList.remove('visible');
     
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    // ล้างโมเดล AR ทั้งหมด
+    clearARModels();
+    
+    // ⭐ รีเซ็ตค่า pinch ด้วย
+    lastPinchDistance = null;
+    isHandTrackingActive = false;
+    
+    // โหลดโมเดลปัจจุบันกลับมาแสดงในโหมด 3D ปกติ
+    if (currentModelPath) {
+        loadModel(currentModelPath);
+    }
+    
+    // รีเซ็ตกล้องและ controls
+    camera.position.set(0, 0, 5);
+    controls.reset();
 }
 
-function handleTouchStart(e) {
-    if (!isARActive || e.touches.length !== 2) return;
+// ⭐ 3. ฟังก์ชันโหลด GLTF แบบมี cache
+function loadGLTF(path, callback) {
+    // ถ้ามีใน cache แล้ว ใช้ clone ทันที
+    if (modelCache[path]) {
+        console.log('Using cached model:', path);
+        callback(modelCache[path].clone());
+        return;
+    }
+
+    // ถ้ายังไม่มี โหลดใหม่
+    console.log('Loading new model:', path);
+    document.getElementById('loadingOverlay').classList.add('visible');
     
-    e.preventDefault();
-    isPinching = true;
-    
-    const touch1 = e.touches[0];
-    const touch2 = e.touches[1];
-    
-    initialPinchDistance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-    );
-    
-    initialScale = currentScale;
+    loader.load(path, (gltf) => {
+        // เก็บใน cache
+        modelCache[path] = gltf.scene;
+        document.getElementById('loadingOverlay').classList.remove('visible');
+        callback(gltf.scene.clone());
+    }, undefined, (err) => {
+        console.error('Error loading model:', err);
+        document.getElementById('loadingOverlay').classList.remove('visible');
+        callback(null);
+    });
 }
 
-function handleTouchMove(e) {
-    if (!isARActive || !isPinching || e.touches.length !== 2) return;
-    
-    e.preventDefault();
-    
-    const touch1 = e.touches[0];
-    const touch2 = e.touches[1];
-    
-    const currentDistance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-    );
-    
-    if (initialPinchDistance > 0) {
-        const scaleDelta = currentDistance / initialPinchDistance;
-        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, initialScale * scaleDelta));
+// ⭐ ฟังก์ชันตรวจจับ Pinch ผ่าน XR Hand Tracking
+function handleXRPinch(frame) {
+    const session = renderer.xr.getSession();
+    if (!session) return;
+
+    let handDetected = false;
+
+    for (const source of session.inputSources) {
+        if (!source.hand) continue;
         
-        setARModelScale(newScale);
-    }
-}
+        handDetected = true;
 
-function handleTouchEnd(e) {
-    if (e.touches.length < 2) {
-        isPinching = false;
-        initialPinchDistance = 0;
-    }
-}
+        const thumbTip = source.hand.get('thumb-tip');
+        const indexTip = source.hand.get('index-finger-tip');
 
-function handleWheel(e) {
-    if (!isARActive) return;
-    
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP;
-    zoomARModel(delta);
+        if (!thumbTip || !indexTip) continue;
+
+        const referenceSpace = renderer.xr.getReferenceSpace();
+        const thumbPose = frame.getJointPose(thumbTip, referenceSpace);
+        const indexPose = frame.getJointPose(indexTip, referenceSpace);
+
+        if (!thumbPose || !indexPose) continue;
+
+        const dx = thumbPose.transform.position.x - indexPose.transform.position.x;
+        const dy = thumbPose.transform.position.y - indexPose.transform.position.y;
+        const dz = thumbPose.transform.position.z - indexPose.transform.position.z;
+        
+        const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+        if (!isHandTrackingActive) {
+            isHandTrackingActive = true;
+            document.getElementById('handTrackingStatus').classList.add('visible');
+        }
+
+        if (lastPinchDistance === null) {
+            lastPinchDistance = distance;
+            return;
+        }
+
+        const delta = distance - lastPinchDistance;
+
+        if (Math.abs(delta) > 0.005) {
+            const zoomFactor = 8; 
+            zoomARModel(delta * zoomFactor);
+        }
+
+        lastPinchDistance = distance;
+    }
+
+    if (!handDetected) {
+        lastPinchDistance = null;
+        isHandTrackingActive = false;
+        document.getElementById('handTrackingStatus').classList.remove('visible');
+    }
 }
 
 function zoomARModel(delta) {
@@ -620,6 +751,7 @@ function setARModelScale(scale) {
     });
     
     showZoomIndicator();
+    updateZoomButtonStates();
 }
 
 function showZoomIndicator() {
@@ -633,12 +765,22 @@ function showZoomIndicator() {
     }, 2000);
 }
 
+function updateZoomButtonStates() {
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    
+    zoomOutBtn.disabled = currentScale <= MIN_SCALE;
+    zoomInBtn.disabled = currentScale >= MAX_SCALE;
+}
+
 function clearARModels() {
     arModels.forEach(model => {
         scene.remove(model);
     });
     arModels = [];
     currentScale = 1.0;
+    // ⭐ รีเซ็ตค่า pinch distance ด้วย
+    lastPinchDistance = null;
 }
 
 async function startAR() {
@@ -655,7 +797,7 @@ async function startAR() {
 
     try {
         const session = await navigator.xr.requestSession('immersive-ar', {
-            requiredFeatures: ['dom-overlay'],
+            requiredFeatures: ['dom-overlay', 'hand-tracking'],
             domOverlay: { root: document.body }
         });
 
@@ -676,7 +818,26 @@ async function startAR() {
 
     } catch (err) {
         console.error('AR Error:', err);
-        alert('เข้า AR ไม่สำเร็จ: ' + err.message);
+        try {
+            const session = await navigator.xr.requestSession('immersive-ar', {
+                requiredFeatures: ['dom-overlay'],
+                domOverlay: { root: document.body }
+            });
+            
+            xrSession = session;
+            isARActive = true;
+            renderer.xr.setReferenceSpaceType('local');
+            await renderer.xr.setSession(session);
+            
+            document.getElementById('arZoomControls').classList.add('visible');
+            document.getElementById('arInstructions').classList.add('visible');
+            
+            if (currentModelPath) {
+                setTimeout(() => placeModelInFrontOfCamera(), 500);
+            }
+        } catch (err2) {
+            alert('เข้า AR ไม่สำเร็จ: ' + err.message);
+        }
     }
 }
 
@@ -684,32 +845,38 @@ window.hideARInstructions = function() {
     document.getElementById('arInstructions').classList.remove('visible');
 }
 
+// ⭐ 4. แก้ placeModelInFrontOfCamera ให้มี flag ป้องกันการโหลดซ้อน
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
+    if (isPlacingModel) return; // ⭐ ป้องกันการโหลดซ้อน
 
+    isPlacingModel = true;
     clearARModels();
 
-    loader.load(currentModelPath, (gltf) => {
-        const model = gltf.scene;
-        
+    // ⭐ ใช้ loadGLTF แทน loader.load โดยตรง
+    loadGLTF(currentModelPath, (model) => {
+        if (!model) {
+            isPlacingModel = false;
+            return;
+        }
+
         const box = new THREE.Box3().setFromObject(model);
         const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
-        const baseScale = 0.5 / maxDim;
         
+        // ⭐ ปรับ scale ให้ใหญ่ขึ้น (0.9 แทน 0.5) ช่วยเรื่องต้องซูมน้อยลง
+        const baseScale = 0.9 / maxDim;
         model.userData.baseScale = baseScale;
         model.userData.isARModel = true;
         
-        const cameraPosition = new THREE.Vector3();
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldPosition(cameraPosition);
-        camera.getWorldDirection(cameraDirection);
+        const camPos = new THREE.Vector3();
+        const camDir = new THREE.Vector3();
+        camera.getWorldPosition(camPos);
+        camera.getWorldDirection(camDir);
         
-        const distance = 1.5;
-        const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(distance));
-        targetPosition.y = 0;
-        
-        model.position.copy(targetPosition);
-        model.lookAt(cameraPosition.x, model.position.y, cameraPosition.z);
+        // ⭐ อย่าวางไกลเกิน (0.8 เมตร แทน 1.5)
+        const distance = 0.8;
+        model.position.copy(camPos.add(camDir.multiplyScalar(distance)));
+        model.position.y = 0;
         
         model.scale.setScalar(baseScale * currentScale);
         
@@ -725,8 +892,8 @@ function placeModelInFrontOfCamera() {
         
         animateModelEntry(model, baseScale * currentScale);
         
-    }, undefined, (error) => {
-        console.error('Error loading AR model:', error);
+        isPlacingModel = false; // ⭐ ปลดล็อก
+        updateZoomButtonStates();
     });
 }
 
@@ -787,12 +954,10 @@ function selectElement(symbol) {
     
     currentModelPath = data.modelFile;
     
-    loadModel(data.modelFile);
-    
-    if (isARActive) {
-        setTimeout(() => {
-            placeModelInFrontOfCamera();
-        }, 100);
+    if (!isARActive) {
+        loadModel(data.modelFile);
+    } else {
+        placeModelInFrontOfCamera();
     }
 }
 
@@ -816,16 +981,30 @@ function showInfo() {
     document.getElementById('info-toggle').classList.add('hidden');
 }
 
+// ⭐ แก้ loadModel ให้ใช้ cache ด้วย
 function loadModel(filePath) {
     if (currentModel) {
         scene.remove(currentModel);
         currentModel = null;
     }
-    document.getElementById('loader').style.display = 'block';
     
-    loader.load(filePath, (gltf) => {
-        document.getElementById('loader').style.display = 'none';
-        currentModel = gltf.scene;
+    loadGLTF(filePath, (model) => {
+        if (!model) {
+            // สร้างโมเดลสำรองถ้าโหลดไม่สำเร็จ
+            const geo = new THREE.IcosahedronGeometry(0.8, 2);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0x3b82f6, 
+                roughness: 0.3, 
+                metalness: 0.2,
+                emissive: 0x1d4ed8,
+                emissiveIntensity: 0.2
+            });
+            currentModel = new THREE.Mesh(geo, mat);
+            scene.add(currentModel);
+            return;
+        }
+
+        currentModel = model;
         
         const box = new THREE.Box3().setFromObject(currentModel);
         const center = box.getCenter(new THREE.Vector3());
@@ -854,20 +1033,6 @@ function loadModel(filePath) {
                 currentModel.rotation.y = 0;
             }
         }, 16);
-    }, undefined, (error) => {
-        console.error('Error loading model:', error);
-        document.getElementById('loader').style.display = 'none';
-        
-        const geo = new THREE.IcosahedronGeometry(0.8, 2);
-        const mat = new THREE.MeshStandardMaterial({ 
-            color: 0x3b82f6, 
-            roughness: 0.3, 
-            metalness: 0.2,
-            emissive: 0x1d4ed8,
-            emissiveIntensity: 0.2
-        });
-        currentModel = new THREE.Mesh(geo, mat);
-        scene.add(currentModel);
     });
 }
 
@@ -896,13 +1061,20 @@ function render(timestamp, frame) {
         }
     }
 
+    if (frame && isARActive) {
+        handleXRPinch(frame);
+    }
+
     controls.update();
     
     arModels.forEach(model => {
         model.rotation.y += 0.005;
     });
     
-    if (currentModel && !isARActive) currentModel.rotation.y += 0.003;
+    if (currentModel && !isARActive) {
+        currentModel.rotation.y += 0.003;
+    }
+    
     renderer.render(scene, camera);
 }
 

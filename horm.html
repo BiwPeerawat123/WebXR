@@ -302,6 +302,7 @@
                 height: 100vh;
                 transform: translateX(-100%);
                 width: 250px;
+                z-index: 40; /* เพิ่ม z-index ให้ sidebar สูงกว่า iframe */
             }
 
             .sidebar.show {
@@ -309,18 +310,19 @@
             }
 
             .menu-toggle {
-                position: absolute;
+                position: fixed; /* เปลี่ยนเป็น fixed */
                 top: 20px;
                 left: 20px;
-                z-index: 30;
+                z-index: 50; /* เพิ่ม z-index ให้สูงที่สุด */
                 background: #2c3e50;
                 color: white;
                 border: none;
-                padding: 12px;
+                padding: 12px 15px;
                 border-radius: 8px;
                 cursor: pointer;
-                font-size: 20px;
+                font-size: 16px;
                 display: none;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             }
 
             .content {
@@ -363,6 +365,9 @@
 </head>
 
 <body>
+
+    <!-- ย้ายปุ่มเมนูมาไว้นอก sidebar และใช้ z-index สูง -->
+    <button class="menu-toggle" id="menuToggle" style="display: none;">☰ เมนู</button>
 
     <div class="sidebar" id="sidebar">
         <button id="periodicBtn" onclick="loadPage('element.html', 'periodic')">ตารางธาตุ</button>
@@ -410,8 +415,6 @@
 
         <button class="close-settings" onclick="toggleSettings()">ปิดหน้าต่าง</button>
     </div>
-
-    <button class="menu-toggle" id="menuToggle" style="display: none;">☰ เมนู</button>
 
     <div class="content" id="mainContent">
         <div class="iframe-container" id="iframeContainer">
@@ -465,7 +468,8 @@
             menuToggle.style.display = 'block';
         }
 
-        menuToggle.addEventListener('click', () => {
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // ป้องกัน event bubbling
             sidebar.classList.toggle('show');
         });
 
@@ -583,6 +587,13 @@
         document.addEventListener('click', (e) => {
             if (!settingsModal.contains(e.target) && !e.target.closest('.settings-btn')) {
                 settingsModal.classList.remove('show');
+            }
+            
+            // ปิด sidebar เมื่อคลิกนอกพื้นที่ (บนมือถือ)
+            if (isMobile && sidebar.classList.contains('show')) {
+                if (!sidebar.contains(e.target) && !e.target.closest('.menu-toggle')) {
+                    sidebar.classList.remove('show');
+                }
             }
         });
 
