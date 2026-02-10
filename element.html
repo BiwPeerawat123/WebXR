@@ -211,74 +211,128 @@
             margin-bottom: 8vh;
         }
         
-        /* AR Zoom Controls */
+        /* AR Zoom Controls - ปรับให้เหมือนโค้ดแรก */
         .ar-zoom-controls {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
             z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
             pointer-events: auto;
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
-        
+
         .ar-zoom-controls.visible {
-            opacity: 1;
+            display: flex;
         }
-        
+
         .zoom-btn {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.95);
-            border: 2px solid rgba(79, 70, 229, 0.3);
-            color: #4f46e5;
-            font-size: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: #333;
+            font-size: 20px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s ease;
-            user-select: none;
-            -webkit-user-select: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
         }
-        
+
         .zoom-btn:active {
             transform: scale(0.9);
-            background: #4f46e5;
-            color: white;
+            background: #f0f0f0;
         }
-        
+
         .zoom-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
         }
-        
-        .zoom-indicator {
+
+        .reset-scale-btn {
+            position: fixed;
+            bottom: 120px;
+            right: 10px;
+            z-index: 100;
+            display: none;
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+
+        .reset-scale-btn.active {
+            display: block;
+        }
+
+        .reset-scale-btn:active {
+            transform: scale(0.95);
+        }
+
+        .scale-indicator {
             position: fixed;
             bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.7);
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
             z-index: 100;
             opacity: 0;
             transition: opacity 0.3s ease;
             pointer-events: none;
         }
-        
-        .zoom-indicator.visible {
+
+        .scale-indicator.visible {
             opacity: 1;
         }
-        
+
+        /* AR Mode Indicator */
+        .ar-mode-indicator {
+            position: fixed;
+            top: 50px;
+            left: 10px;
+            background: linear-gradient(135deg, #ff0080, #7928ca);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 100;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(255, 0, 128, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .ar-mode-indicator.active {
+            display: flex;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
         /* AR Instructions */
         .ar-instructions {
             position: fixed;
@@ -317,43 +371,6 @@
         .ar-instructions .gesture-icon {
             font-size: 32px;
             margin: 10px 0;
-        }
-
-        /* Hand tracking status indicator */
-        .hand-tracking-status {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            color: #4ade80;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            z-index: 100;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .hand-tracking-status.visible {
-            opacity: 1;
-        }
-
-        .hand-tracking-status .dot {
-            width: 8px;
-            height: 8px;
-            background: #4ade80;
-            border-radius: 50%;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
         }
 
         /* Loading overlay */
@@ -404,27 +421,28 @@
     <div class="loading-text">กำลังโหลดโมเดล...</div>
 </div>
 
-<!-- AR Zoom Controls -->
-<div id="arZoomControls" class="ar-zoom-controls">
-    <button class="zoom-btn" id="zoomOutBtn" title="ย่อ">−</button>
-    <button class="zoom-btn" id="zoomInBtn" title="ขยาย">+</button>
+<!-- AR Mode Indicator -->
+<div id="ar-indicator" class="ar-mode-indicator">
+    <span>🥽</span>
+    <span>AR Mode</span>
 </div>
 
-<!-- Zoom Indicator -->
-<div id="zoomIndicator" class="zoom-indicator">ขนาด: 100%</div>
-
-<!-- Hand Tracking Status -->
-<div id="handTrackingStatus" class="hand-tracking-status">
-    <span class="dot"></span>
-    <span>ตรวจจับมือแล้ว - บีบนิ้วเพื่อซูม</span>
+<!-- AR Zoom Controls - ปรับให้เหมือนโค้ดแรก -->
+<div id="zoom-controls" class="ar-zoom-controls">
+    <button id="zoom-in" class="zoom-btn" title="ซูมเข้า">+</button>
+    <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
+
+<button id="reset-scale" class="reset-scale-btn">รีเซ็ตขนาด</button>
+
+<div id="scale-indicator" class="scale-indicator">100%</div>
 
 <!-- AR Instructions -->
 <div id="arInstructions" class="ar-instructions">
     <h3>🥽 โหมด AR</h3>
     <div class="gesture-icon">🤏</div>
-    <p><strong>บีบนิ้วโป้งกับนิ้วชี้</strong> เพื่อซูมเข้า/ออก</p>
-    <p>หรือใช้ปุ่ม + − ด้านล่าง</p>
+    <p><strong>ใช้ 2 นิ้วบีบ</strong> เพื่อซูมเข้า/ออก</p>
+    <p>หรือใช้ปุ่ม + − ด้านขวา</p>
     <button onclick="hideARInstructions()" style="margin-top: 15px; padding: 8px 20px; background: #4f46e5; color: white; border: none; border-radius: 20px; cursor: pointer;">เข้าใจแล้ว</button>
 </div>
 
@@ -533,18 +551,24 @@ let currentModelPath = null;
 let xrSession = null;
 let isARActive = false;
 
-// AR Zoom Variables
-let arModels = [];
+// ⭐ ตัวแปรสำหรับ Smooth Zoom - เหมือนโค้ดแรก
+let currentARModel = null;  // เปลี่ยนจาก arModels เป็น currentARModel (ตัวเดียว)
+let baseScale = 0.5;
 let currentScale = 1.0;
+let targetScale = 1.0;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3.0;
-const SCALE_STEP = 0.25;
+const ZOOM_STEP = 1.25;  // เปลี่ยนจาก 0.25 เป็น 1.25 (คูณ/หาร)
+const SMOOTH_FACTOR = 0.15;
 
-// XR Hand Tracking Pinch Variables
-let lastPinchDistance = null;
-let isHandTrackingActive = false;
+// ⭐ ตัวแปรสำหรับ Touch Pinch - เหมือนโค้ดแรก
+let initialPinchDistance = 0;
+let initialPinchScale = 1.0;
+let isPinching = false;
+let touches = new Map();
 
-let isPlacingModel = false;
+// Loading Lock
+let isLoadingARModel = false;
 const modelCache = {};
 
 function init() {
@@ -566,7 +590,7 @@ function init() {
     
     renderer.xr.enabled = true;
     
-    // 🔥 ตัวโกง: Tone Mapping + Exposure
+    // Tone Mapping + Exposure
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.6;
     
@@ -579,10 +603,9 @@ function init() {
     controls.maxDistance = 10;
     controls.enablePan = false;
 
-    // ✅ 1. AmbientLight แรงขึ้น (จาก 0.7 เป็น 2.0)
+    // แสง
     scene.add(new THREE.AmbientLight(0xffffff, 2.0));
     
-    // Directional Light หลัก (ด้านบน)
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dirLight.position.set(3, 5, 5);
     dirLight.castShadow = true;
@@ -590,17 +613,15 @@ function init() {
     dirLight.shadow.mapSize.height = 1024;
     scene.add(dirLight);
     
-    // ✅ 2. ไฟด้านหน้า (สำคัญมาก!)
     const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
-    frontLight.position.set(0, 2, 5); // ยิงจากหน้ากล้อง
+    frontLight.position.set(0, 2, 5);
     scene.add(frontLight);
     
-    // Fill Light ด้านหลัง
     const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.5);
     fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
 
-    // ✅ 3. Environment Map (ตัวเทพ!)
+    // Environment Map
     const pmrem = new THREE.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
@@ -613,7 +634,6 @@ function init() {
     scene.add(reticle);
 
     controller = renderer.xr.getController(0);
-    controller.addEventListener('select', placeObject);
     scene.add(controller);
 
     loader = new GLTFLoader();
@@ -621,8 +641,10 @@ function init() {
     window.addEventListener('resize', onWindowResize);
     
     document.getElementById('arBtn').addEventListener('click', startAR);
-    document.getElementById('zoomInBtn').addEventListener('click', () => zoomARModel(SCALE_STEP));
-    document.getElementById('zoomOutBtn').addEventListener('click', () => zoomARModel(-SCALE_STEP));
+    
+    // ⭐ เชื่อมปุ่มซูมเหมือนโค้ดแรก
+    setupZoomControls();
+    setupTouchEvents();
     
     renderer.xr.addEventListener('sessionend', () => {
         isARActive = false;
@@ -630,10 +652,9 @@ function init() {
         hitTestSource = null;
         hitTestSourceRequested = false;
         xrSession = null;
-        isPlacingModel = false;
+        isLoadingARModel = false;
         document.getElementById('loadingOverlay').classList.remove('visible');
         resetToNormalMode();
-        console.log('AR Session ended - Reset to normal mode');
     });
     
     setTimeout(() => selectElement('Cu'), 500);
@@ -641,15 +662,157 @@ function init() {
     animate();
 }
 
+// ⭐ ฟังก์ชัน setupZoomControls - เหมือนโค้ดแรก
+function setupZoomControls() {
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const resetBtn = document.getElementById('reset-scale');
+    
+    zoomInBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomIn();
+    });
+    
+    zoomOutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        zoomOut();
+    });
+    
+    resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetZoom();
+    });
+}
+
+function zoomIn() {
+    targetScale *= ZOOM_STEP;
+    clampTargetScale();
+    showScaleIndicator();
+}
+
+function zoomOut() {
+    targetScale *= (1 / ZOOM_STEP);
+    clampTargetScale();
+    showScaleIndicator();
+}
+
+function resetZoom() {
+    targetScale = 1.0;
+    showScaleIndicator();
+}
+
+function clampTargetScale() {
+    targetScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
+}
+
+function showScaleIndicator() {
+    const indicator = document.getElementById('scale-indicator');
+    indicator.textContent = `${Math.round(targetScale * 100)}%`;
+    indicator.classList.add('visible');
+    
+    clearTimeout(window.scaleIndicatorTimeout);
+    window.scaleIndicatorTimeout = setTimeout(() => {
+        indicator.classList.remove('visible');
+    }, 1500);
+    
+    updateZoomButtonStates();
+}
+
+function updateZoomButtonStates() {
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomInBtn = document.getElementById('zoom-in');
+    
+    zoomOutBtn.disabled = targetScale <= MIN_SCALE;
+    zoomInBtn.disabled = targetScale >= MAX_SCALE;
+}
+
+// ⭐ ฟังก์ชัน setupTouchEvents - เหมือนโค้ดแรกทุกประการ
+function setupTouchEvents() {
+    const canvas = renderer.domElement;
+    
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+}
+
+function handleTouchStart(e) {
+    if (!isARActive) return;
+    
+    for (let touch of e.touches) {
+        touches.set(touch.identifier, {
+            x: touch.clientX,
+            y: touch.clientY
+        });
+    }
+    
+    if (e.touches.length === 2) {
+        isPinching = true;
+        const touchArray = Array.from(e.touches);
+        initialPinchDistance = getDistance(
+            touchArray[0].clientX, touchArray[0].clientY,
+            touchArray[1].clientX, touchArray[1].clientY
+        );
+        initialPinchScale = targetScale;
+        e.preventDefault();
+    }
+}
+
+function handleTouchMove(e) {
+    if (!isARActive || !isPinching || e.touches.length !== 2) return;
+    
+    e.preventDefault();
+    
+    const touchArray = Array.from(e.touches);
+    const currentDistance = getDistance(
+        touchArray[0].clientX, touchArray[0].clientY,
+        touchArray[1].clientX, touchArray[1].clientY
+    );
+    
+    const scaleRatio = currentDistance / initialPinchDistance;
+    targetScale = initialPinchScale * scaleRatio;
+    
+    clampTargetScale();
+    showScaleIndicator();
+}
+
+function handleTouchEnd(e) {
+    for (let touch of e.changedTouches) {
+        touches.delete(touch.identifier);
+    }
+    
+    if (e.touches.length < 2) {
+        isPinching = false;
+        initialPinchDistance = 0;
+    }
+    
+    for (let touch of e.touches) {
+        touches.set(touch.identifier, {
+            x: touch.clientX,
+            y: touch.clientY
+        });
+    }
+}
+
+function getDistance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
 function resetToNormalMode() {
-    document.getElementById('arZoomControls').classList.remove('visible');
-    document.getElementById('zoomIndicator').classList.remove('visible');
-    document.getElementById('handTrackingStatus').classList.remove('visible');
+    document.getElementById('ar-indicator').classList.remove('active');
+    document.getElementById('zoom-controls').classList.remove('visible');
+    document.getElementById('reset-scale').classList.remove('active');
+    document.getElementById('scale-indicator').classList.remove('visible');
     
-    clearARModels();
+    // ล้างโมเดล AR
+    if (currentARModel) {
+        scene.remove(currentARModel);
+        currentARModel = null;
+    }
     
-    lastPinchDistance = null;
-    isHandTrackingActive = false;
+    currentScale = 1.0;
+    targetScale = 1.0;
+    baseScale = 0.5;
     
     if (currentModelPath) {
         loadModel(currentModelPath);
@@ -680,106 +843,6 @@ function loadGLTF(path, callback) {
     });
 }
 
-function handleXRPinch(frame) {
-    const session = renderer.xr.getSession();
-    if (!session) return;
-
-    let handDetected = false;
-
-    for (const source of session.inputSources) {
-        if (!source.hand) continue;
-        
-        handDetected = true;
-
-        const thumbTip = source.hand.get('thumb-tip');
-        const indexTip = source.hand.get('index-finger-tip');
-
-        if (!thumbTip || !indexTip) continue;
-
-        const referenceSpace = renderer.xr.getReferenceSpace();
-        const thumbPose = frame.getJointPose(thumbTip, referenceSpace);
-        const indexPose = frame.getJointPose(indexTip, referenceSpace);
-
-        if (!thumbPose || !indexPose) continue;
-
-        const dx = thumbPose.transform.position.x - indexPose.transform.position.x;
-        const dy = thumbPose.transform.position.y - indexPose.transform.position.y;
-        const dz = thumbPose.transform.position.z - indexPose.transform.position.z;
-        
-        const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
-        if (!isHandTrackingActive) {
-            isHandTrackingActive = true;
-            document.getElementById('handTrackingStatus').classList.add('visible');
-        }
-
-        if (lastPinchDistance === null) {
-            lastPinchDistance = distance;
-            return;
-        }
-
-        const delta = distance - lastPinchDistance;
-
-        if (Math.abs(delta) > 0.005) {
-            const zoomFactor = 8; 
-            zoomARModel(delta * zoomFactor);
-        }
-
-        lastPinchDistance = distance;
-    }
-
-    if (!handDetected) {
-        lastPinchDistance = null;
-        isHandTrackingActive = false;
-        document.getElementById('handTrackingStatus').classList.remove('visible');
-    }
-}
-
-function zoomARModel(delta) {
-    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, currentScale + delta));
-    setARModelScale(newScale);
-}
-
-function setARModelScale(scale) {
-    currentScale = scale;
-    
-    arModels.forEach(model => {
-        const baseScale = model.userData.baseScale || 1;
-        model.scale.setScalar(baseScale * currentScale);
-    });
-    
-    showZoomIndicator();
-    updateZoomButtonStates();
-}
-
-function showZoomIndicator() {
-    const indicator = document.getElementById('zoomIndicator');
-    indicator.textContent = `ขนาด: ${Math.round(currentScale * 100)}%`;
-    indicator.classList.add('visible');
-    
-    clearTimeout(window.zoomIndicatorTimeout);
-    window.zoomIndicatorTimeout = setTimeout(() => {
-        indicator.classList.remove('visible');
-    }, 2000);
-}
-
-function updateZoomButtonStates() {
-    const zoomOutBtn = document.getElementById('zoomOutBtn');
-    const zoomInBtn = document.getElementById('zoomInBtn');
-    
-    zoomOutBtn.disabled = currentScale <= MIN_SCALE;
-    zoomInBtn.disabled = currentScale >= MAX_SCALE;
-}
-
-function clearARModels() {
-    arModels.forEach(model => {
-        scene.remove(model);
-    });
-    arModels = [];
-    currentScale = 1.0;
-    lastPinchDistance = null;
-}
-
 async function startAR() {
     if (!navigator.xr) {
         alert('อุปกรณ์ไม่รองรับ WebXR');
@@ -794,18 +857,28 @@ async function startAR() {
 
     try {
         const session = await navigator.xr.requestSession('immersive-ar', {
-            requiredFeatures: ['dom-overlay', 'hand-tracking'],
+            requiredFeatures: ['dom-overlay'],
             domOverlay: { root: document.body }
         });
 
         xrSession = session;
         isARActive = true;
         
+        currentScale = 1.0;
+        targetScale = 1.0;
+        
+        document.getElementById('ar-indicator').classList.add('active');
+        document.getElementById('zoom-controls').classList.add('visible');
+        document.getElementById('reset-scale').classList.add('active');
+        document.getElementById('arInstructions').classList.add('visible');
+        
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
         
-        document.getElementById('arZoomControls').classList.add('visible');
-        document.getElementById('arInstructions').classList.add('visible');
+        if (currentModel) {
+            scene.remove(currentModel);
+            currentModel = null;
+        }
         
         if (currentModelPath) {
             setTimeout(() => {
@@ -815,26 +888,7 @@ async function startAR() {
 
     } catch (err) {
         console.error('AR Error:', err);
-        try {
-            const session = await navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['dom-overlay'],
-                domOverlay: { root: document.body }
-            });
-            
-            xrSession = session;
-            isARActive = true;
-            renderer.xr.setReferenceSpaceType('local');
-            await renderer.xr.setSession(session);
-            
-            document.getElementById('arZoomControls').classList.add('visible');
-            document.getElementById('arInstructions').classList.add('visible');
-            
-            if (currentModelPath) {
-                setTimeout(() => placeModelInFrontOfCamera(), 500);
-            }
-        } catch (err2) {
-            alert('เข้า AR ไม่สำเร็จ: ' + err.message);
-        }
+        alert('เข้า AR ไม่สำเร็จ: ' + err.message);
     }
 }
 
@@ -842,44 +896,52 @@ window.hideARInstructions = function() {
     document.getElementById('arInstructions').classList.remove('visible');
 }
 
+// ⭐ แก้ placeModelInFrontOfCamera - ใช้ currentARModel เดียว และเพิ่มระยะห่าง
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
-    if (isPlacingModel) return;
+    if (isLoadingARModel) return;
 
-    isPlacingModel = true;
-    clearARModels();
+    isLoadingARModel = true;
+
+    // ล้างโมเดลเก่าก่อน
+    if (currentARModel) {
+        scene.remove(currentARModel);
+        currentARModel = null;
+    }
 
     loadGLTF(currentModelPath, (model) => {
         if (!model) {
-            isPlacingModel = false;
+            isLoadingARModel = false;
             return;
         }
 
         const box = new THREE.Box3().setFromObject(model);
         const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+        baseScale = 0.5 / maxDim;
         
-        const baseScale = 0.9 / maxDim;
-        model.userData.baseScale = baseScale;
-        model.userData.isARModel = true;
-        
-        const camPos = new THREE.Vector3();
-        const camDir = new THREE.Vector3();
-        camera.getWorldPosition(camPos);
-        camera.getWorldDirection(camDir);
-        
-        const distance = 0.8;
-        model.position.copy(camPos.add(camDir.multiplyScalar(distance)));
-        model.position.y = 0;
+        currentScale = 1.0;
+        targetScale = 1.0;
         
         model.scale.setScalar(baseScale * currentScale);
         
-        // ⭐ เทคนิค PRO: เพิ่ม emissive นิดหน่อย
+        const cameraPosition = new THREE.Vector3();
+        const cameraDirection = new THREE.Vector3();
+        camera.getWorldPosition(cameraPosition);
+        camera.getWorldDirection(cameraDirection);
+        
+        // ⭐ เปลี่ยนระยะห่างจาก 0.8 เป็น 1.5 (เหมือนโค้ดแรก)
+        const distance = 1.5;
+        const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(distance));
+        targetPosition.y = 0;
+        
+        model.position.copy(targetPosition);
+        model.lookAt(cameraPosition.x, model.position.y, cameraPosition.z);
+        
         model.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = true; 
                 c.receiveShadow = true;
                 
-                // เพิ่มแสงในตัวโมเดล
                 if (c.material) {
                     c.material.emissive = new THREE.Color(0x222222);
                     c.material.emissiveIntensity = 0.25;
@@ -887,31 +949,24 @@ function placeModelInFrontOfCamera() {
             }
         });
         
+        model.userData.isARModel = true;
+        currentARModel = model;
         scene.add(model);
-        arModels.push(model);
         
-        animateModelEntry(model, baseScale * currentScale);
+        // Animation เข้า
+        model.scale.setScalar(0);
+        let s = 0;
+        const entry = setInterval(() => {
+            s += 0.1;
+            model.scale.setScalar(s * baseScale * currentScale);
+            if(s >= 1) {
+                clearInterval(entry);
+                updateZoomButtonStates();
+            }
+        }, 30);
         
-        isPlacingModel = false;
-        updateZoomButtonStates();
+        isLoadingARModel = false;
     });
-}
-
-function animateModelEntry(model, targetScale) {
-    model.scale.setScalar(0);
-    let s = 0;
-    const entry = setInterval(() => {
-        s += 0.1;
-        model.scale.setScalar(s * targetScale);
-        if(s >= 1) {
-            clearInterval(entry);
-        }
-    }, 30);
-}
-
-function placeObject() {
-    if (!isARActive || !currentModelPath) return;
-    placeModelInFrontOfCamera();
 }
 
 function generateTable() {
@@ -954,10 +1009,10 @@ function selectElement(symbol) {
     
     currentModelPath = data.modelFile;
     
-    if (!isARActive) {
-        loadModel(data.modelFile);
-    } else {
+    if (isARActive) {
         placeModelInFrontOfCamera();
+    } else {
+        loadModel(data.modelFile);
     }
 }
 
@@ -1013,7 +1068,6 @@ function loadModel(filePath) {
         currentModel.position.sub(center.multiplyScalar(scale));
         currentModel.position.y += 0.5;
         
-        // ⭐ เทคนิค PRO: เพิ่ม emissive ในโหมดปกติด้วย
         currentModel.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = true; 
@@ -1050,6 +1104,7 @@ function animate() {
     renderer.setAnimationLoop(render);
 }
 
+// ⭐ แก้ render loop - เพิ่ม smooth zoom และหมุนโมเดล
 function render(timestamp, frame) {
     if (frame && hitTestSource) {
         const referenceSpace = renderer.xr.getReferenceSpace();
@@ -1065,15 +1120,15 @@ function render(timestamp, frame) {
         }
     }
 
-    if (frame && isARActive) {
-        handleXRPinch(frame);
-    }
-
     controls.update();
     
-    arModels.forEach(model => {
-        model.rotation.y += 0.005;
-    });
+    // ⭐ Smooth zoom แบบเดียวกับโค้ดแรก
+    if (currentARModel && isARActive) {
+        currentScale += (targetScale - currentScale) * SMOOTH_FACTOR;
+        const finalScale = baseScale * currentScale;
+        currentARModel.scale.setScalar(finalScale);
+        currentARModel.rotation.y += 0.002;
+    }
     
     if (currentModel && !isARActive) {
         currentModel.rotation.y += 0.003;

@@ -43,7 +43,7 @@
         .rock-name-th { font-weight: bold; font-size: 0.6rem; line-height: 1.1; color: white; }
         .rock-name-en { font-size: 0.35rem; opacity: 0.85; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: rgba(255,255,255,0.9); }
         
-        /* Category Colors - เหลือแค่ 2 ประเภท */
+        /* Category Colors */
         .category-igneous { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
         .category-sedimentary { background: linear-gradient(135deg, #feca57, #ff9f43); }
 
@@ -355,6 +355,30 @@
             opacity: 1;
         }
 
+        /* Rotation hint */
+        .rotation-hint {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rotation-hint.visible {
+            opacity: 1;
+        }
+
         /* Loading overlay */
         .loading-overlay {
             position: fixed;
@@ -417,30 +441,39 @@
     </div>
 </div>
 
+<!-- AR Mode Indicator -->
 <div id="ar-indicator" class="ar-mode-indicator">
     <span>🥽</span>
     <span>AR Mode</span>
 </div>
 
+<!-- AR Controls -->
 <div id="ar-controls" class="ar-controls">
-    <div class="scale-hint">
-        🤏 ใช้ 2 นิ้วซูมเข้า/ออก หรือใช้ปุ่มด้านขวา
-    </div>
+    <div class="scale-hint">ใช้ 2 นิ้วเพื่อซูม</div>
 </div>
 
+<!-- Zoom Controls -->
 <div id="zoom-controls" class="zoom-controls">
     <button id="zoom-in" class="zoom-btn" title="ซูมเข้า">+</button>
     <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
 
-<button id="reset-scale" class="reset-scale-btn">
-    ↺ รีเซ็ตขนาด
-</button>
+<!-- Reset Scale Button -->
+<button id="reset-scale" class="reset-scale-btn">รีเซ็ตขนาด</button>
 
+<!-- Scale Indicator -->
 <div id="scale-indicator" class="scale-indicator">100%</div>
 
+<!-- Rotation Hint -->
+<div id="rotation-hint" class="rotation-hint">
+    <span>👆</span>
+    <span>ลากเพื่อหมุนโมเดล</span>
+</div>
+
+<!-- UI Layer -->
 <div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
     
+    <!-- Header -->
     <div class="pointer-events-auto p-2 flex justify-between items-center bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm">
         <div class="text-slate-800 flex items-center gap-1.5">
             <span class="text-base">🪨</span>
@@ -456,6 +489,7 @@
         </button>
     </div>
 
+    <!-- Info Panel -->
     <div id="info-panel" class="info-panel glass-panel rounded-lg p-2 text-slate-800 pointer-events-auto hidden-panel">
         <div id="info-content">
             <div class="flex justify-between items-start mb-1">
@@ -478,13 +512,14 @@
         </div>
     </div>
     
+    <!-- Info Toggle Button -->
     <div id="info-toggle" class="fixed top-12 right-2 z-20 pointer-events-auto hidden">
         <button onclick="toggleInfo()" class="info-toggle-btn" title="แสดงข้อมูล">
             ℹ️
         </button>
     </div>
 
-    <!-- เปลี่ยนเป็น grid-cols-2 สำหรับ 4 หิน -->
+    <!-- Rock Selection Grid -->
     <div class="pointer-events-auto p-1.5" style="margin-bottom: 10vh;">
         <div class="gray-board max-w-[220px] mx-auto">
             <div class="grid grid-cols-2 gap-0.5" id="rock-grid">
@@ -499,7 +534,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// เหลือแค่ 4 หิน
+// Rock data
 const rocksData = {
     basalt: { 
         name: "Basalt", 
@@ -555,7 +590,7 @@ let currentModelPath = null;
 let xrSession = null;
 let isARActive = false;
 
-// ⭐ ตัวแปรสำหรับ Smooth Zoom
+// AR Model variables
 let currentARModel = null;
 let baseScale = 0.5;
 let currentScale = 1.0;
@@ -565,15 +600,20 @@ const MAX_SCALE = 3.0;
 const ZOOM_STEP = 1.25;
 const SMOOTH_FACTOR = 0.15;
 
+// Touch variables
 let initialPinchDistance = 0;
 let initialPinchScale = 1.0;
 let isPinching = false;
 let touches = new Map();
 
-// ⭐ 1. Loading Lock - กันโหลดซ้อน
-let isLoadingARModel = false;
+// ⭐⭐⭐ NEW: Rotation variables for AR
+let isRotating = false;
+let previousTouchPosition = { x: 0, y: 0 };
+let rotationVelocity = { x: 0, y: 0 };
+const ROTATION_SENSITIVITY = 0.005;
+const ROTATION_DAMPING = 0.95;
 
-// ⭐ 2. Model Cache - เก็บโมเดลที่โหลดแล้ว
+let isLoadingARModel = false;
 const modelCache = {};
 
 function init() {
@@ -604,6 +644,7 @@ function init() {
     controls.maxDistance = 8;
     controls.enablePan = false;
 
+    // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
     dirLight.position.set(3, 5, 5);
@@ -616,6 +657,7 @@ function init() {
     fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
 
+    // Reticle
     const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI/2);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.5 });
     
@@ -625,8 +667,6 @@ function init() {
     scene.add(reticle);
 
     controller = renderer.xr.getController(0);
-    // ⭐ 3. ปิด controller select ชั่วคราวเพื่อป้องกัน spawn ซ้อน
-    // controller.addEventListener('select', placeObject);
     scene.add(controller);
 
     loader = new GLTFLoader();
@@ -644,11 +684,8 @@ function init() {
         hitTestSource = null;
         hitTestSourceRequested = false;
         xrSession = null;
-        
-        // ⭐ รีเซ็ต loading lock เมื่อออกจาก AR
         isLoadingARModel = false;
         document.getElementById('loadingOverlay').classList.remove('visible');
-        
         resetToNormalMode();
     });
     
@@ -657,21 +694,17 @@ function init() {
     animate();
 }
 
-// ⭐ ฟังก์ชันโหลด GLB แบบมี cache
 function loadGLB(path, callback) {
-    // ถ้ามีใน cache แล้ว ใช้ clone ทันที
     if (modelCache[path]) {
         console.log('Using cached model:', path);
         callback(modelCache[path].clone());
         return;
     }
 
-    // ถ้ายังไม่มี โหลดใหม่
     console.log('Loading new model:', path);
     document.getElementById('loadingOverlay').classList.add('visible');
     
     loader.load(path, (gltf) => {
-        // เก็บใน cache
         modelCache[path] = gltf.scene;
         document.getElementById('loadingOverlay').classList.remove('visible');
         callback(gltf.scene.clone());
@@ -688,6 +721,7 @@ function resetToNormalMode() {
     document.getElementById('zoom-controls').classList.remove('active');
     document.getElementById('reset-scale').classList.remove('active');
     document.getElementById('scale-indicator').classList.remove('visible');
+    document.getElementById('rotation-hint').classList.remove('visible');
     
     if (currentARModel) {
         scene.remove(currentARModel);
@@ -697,6 +731,10 @@ function resetToNormalMode() {
     currentScale = 1.0;
     targetScale = 1.0;
     baseScale = 0.5;
+    
+    // Reset rotation variables
+    rotationVelocity = { x: 0, y: 0 };
+    isRotating = false;
     
     if (currentModelPath) {
         loadModel(currentModelPath);
@@ -769,6 +807,7 @@ function updateZoomButtonStates() {
     zoomInBtn.disabled = targetScale >= MAX_SCALE;
 }
 
+// ⭐⭐⭐ NEW: Setup touch events with rotation support
 function setupTouchEvents() {
     const canvas = renderer.domElement;
     
@@ -778,6 +817,7 @@ function setupTouchEvents() {
     canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 }
 
+// ⭐⭐⭐ NEW: Handle touch start with rotation detection
 function handleTouchStart(e) {
     if (!isARActive) return;
     
@@ -788,8 +828,23 @@ function handleTouchStart(e) {
         });
     }
     
-    if (e.touches.length === 2) {
+    if (e.touches.length === 1 && currentARModel) {
+        // Single touch - start rotation
+        isRotating = true;
+        previousTouchPosition = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        };
+        rotationVelocity = { x: 0, y: 0 };
+        e.preventDefault();
+        
+        // Show rotation hint briefly
+        showRotationHint();
+        
+    } else if (e.touches.length === 2) {
+        // Two touches - start pinch zoom
         isPinching = true;
+        isRotating = false; // Disable rotation while pinching
         const touchArray = Array.from(e.touches);
         initialPinchDistance = getDistance(
             touchArray[0].clientX, touchArray[0].clientY,
@@ -800,34 +855,86 @@ function handleTouchStart(e) {
     }
 }
 
+// ⭐⭐⭐ NEW: Handle touch move with rotation
 function handleTouchMove(e) {
-    if (!isARActive || !isPinching || e.touches.length !== 2) return;
+    if (!isARActive) return;
     
-    e.preventDefault();
+    if (isRotating && e.touches.length === 1 && currentARModel) {
+        e.preventDefault();
+        
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - previousTouchPosition.x;
+        const deltaY = touch.clientY - previousTouchPosition.y;
+        
+        // Calculate rotation based on touch movement
+        // Horizontal drag = rotate around Y axis (left/right)
+        // Vertical drag = rotate around X axis (up/down)
+        const rotateY = deltaX * ROTATION_SENSITIVITY;
+        const rotateX = deltaY * ROTATION_SENSITIVITY;
+        
+        // Apply rotation to model
+        currentARModel.rotation.y += rotateY;
+        currentARModel.rotation.x += rotateX;
+        
+        // Clamp X rotation to prevent flipping upside down
+        currentARModel.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentARModel.rotation.x));
+        
+        // Store velocity for inertia
+        rotationVelocity.x = rotateX;
+        rotationVelocity.y = rotateY;
+        
+        previousTouchPosition = {
+            x: touch.clientX,
+            y: touch.clientY
+        };
+        
+    } else if (isPinching && e.touches.length === 2) {
+        e.preventDefault();
+        
+        const touchArray = Array.from(e.touches);
+        const currentDistance = getDistance(
+            touchArray[0].clientX, touchArray[0].clientY,
+            touchArray[1].clientX, touchArray[1].clientY
+        );
+        
+        const scaleRatio = currentDistance / initialPinchDistance;
+        targetScale = initialPinchScale * scaleRatio;
+        
+        clampTargetScale();
+        showScaleIndicator();
+    }
     
-    const touchArray = Array.from(e.touches);
-    const currentDistance = getDistance(
-        touchArray[0].clientX, touchArray[0].clientY,
-        touchArray[1].clientX, touchArray[1].clientY
-    );
-    
-    const scaleRatio = currentDistance / initialPinchDistance;
-    targetScale = initialPinchScale * scaleRatio;
-    
-    clampTargetScale();
-    showScaleIndicator();
+    // Update touches map
+    for (let touch of e.touches) {
+        touches.set(touch.identifier, {
+            x: touch.clientX,
+            y: touch.clientY
+        });
+    }
 }
 
+// ⭐⭐⭐ NEW: Handle touch end
 function handleTouchEnd(e) {
     for (let touch of e.changedTouches) {
         touches.delete(touch.identifier);
     }
     
-    if (e.touches.length < 2) {
+    if (e.touches.length === 0) {
+        // All touches released
+        isRotating = false;
         isPinching = false;
         initialPinchDistance = 0;
+    } else if (e.touches.length === 1 && isPinching) {
+        // Transition from pinch to single touch (rotation)
+        isPinching = false;
+        isRotating = true;
+        previousTouchPosition = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        };
     }
     
+    // Update remaining touches
     for (let touch of e.touches) {
         touches.set(touch.identifier, {
             x: touch.clientX,
@@ -838,6 +945,17 @@ function handleTouchEnd(e) {
 
 function getDistance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+// ⭐⭐⭐ NEW: Show rotation hint
+function showRotationHint() {
+    const hint = document.getElementById('rotation-hint');
+    hint.classList.add('visible');
+    
+    clearTimeout(window.rotationHintTimeout);
+    window.rotationHintTimeout = setTimeout(() => {
+        hint.classList.remove('visible');
+    }, 3000);
 }
 
 async function startAR() {
@@ -869,6 +987,9 @@ async function startAR() {
         document.getElementById('zoom-controls').classList.add('active');
         document.getElementById('reset-scale').classList.add('active');
         
+        // Show rotation hint after entering AR
+        setTimeout(showRotationHint, 1000);
+        
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
         
@@ -889,25 +1010,17 @@ async function startAR() {
     }
 }
 
-// ⭐ แก้ placeModelInFrontOfCamera ให้มี loading lock
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
-    
-    // ⭐ กันโหลดซ้อน
-    if (isLoadingARModel) {
-        console.log('Already loading model, skipping...');
-        return;
-    }
+    if (isLoadingARModel) return;
     
     isLoadingARModel = true;
 
-    // ล้างโมเดลเก่าก่อน
     if (currentARModel) {
         scene.remove(currentARModel);
         currentARModel = null;
     }
 
-    // ⭐ ใช้ loadGLB แทน loader.load โดยตรง
     loadGLB(currentModelPath, (model) => {
         if (!model) {
             isLoadingARModel = false;
@@ -935,6 +1048,9 @@ function placeModelInFrontOfCamera() {
         model.position.copy(targetPosition);
         model.lookAt(cameraPosition.x, model.position.y, cameraPosition.z);
         
+        // ⭐⭐⭐ Reset rotation when placing new model
+        model.rotation.set(0, 0, 0);
+        
         model.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = true; 
@@ -946,7 +1062,7 @@ function placeModelInFrontOfCamera() {
         currentARModel = model;
         scene.add(model);
         
-        // Animation เข้า
+        // Animation entry
         model.scale.setScalar(0);
         let s = 0;
         const entry = setInterval(() => {
@@ -958,17 +1074,8 @@ function placeModelInFrontOfCamera() {
             }
         }, 30);
         
-        // ⭐ ปลดล็อกหลังโหลดเสร็จ
         isLoadingARModel = false;
     });
-}
-
-// ⭐ ปิดการใช้งานชั่วคราวเพราะยังไม่มี hit-test จริง
-function placeObject() {
-    // ไม่ทำอะไรจนกว่าจะ implement hit-test จริง
-    console.log('placeObject disabled - waiting for hit-test implementation');
-    // if (!isARActive || !currentModelPath) return;
-    // placeModelInFrontOfCamera();
 }
 
 function generateTable() {
@@ -1037,7 +1144,6 @@ function showInfo() {
     document.getElementById('info-toggle').classList.add('hidden');
 }
 
-// ⭐ แก้ loadModel ให้ใช้ cache ด้วย
 function loadModel(filePath) {
     if (currentModel) {
         scene.remove(currentModel);
@@ -1049,7 +1155,6 @@ function loadModel(filePath) {
         document.getElementById('loader').style.display = 'none';
         
         if (!model) {
-            // สร้างโมเดลสำรองถ้าโหลดไม่สำเร็จ
             const geo = new THREE.DodecahedronGeometry(0.8, 1);
             const mat = new THREE.MeshStandardMaterial({ 
                 color: 0x8b5cf6, 
@@ -1122,10 +1227,24 @@ function render(timestamp, frame) {
     controls.update();
     
     if (currentARModel && isARActive) {
+        // Smooth zoom
         currentScale += (targetScale - currentScale) * SMOOTH_FACTOR;
         const finalScale = baseScale * currentScale;
         currentARModel.scale.setScalar(finalScale);
-        currentARModel.rotation.y += 0.002;
+        
+        // ⭐⭐⭐ NEW: Apply rotation inertia when not touching
+        if (!isRotating) {
+            currentARModel.rotation.y += rotationVelocity.y;
+            currentARModel.rotation.x += rotationVelocity.x;
+            
+            // Damping
+            rotationVelocity.x *= ROTATION_DAMPING;
+            rotationVelocity.y *= ROTATION_DAMPING;
+            
+            // Stop very small velocities
+            if (Math.abs(rotationVelocity.x) < 0.001) rotationVelocity.x = 0;
+            if (Math.abs(rotationVelocity.y) < 0.001) rotationVelocity.y = 0;
+        }
     }
     
     if (currentModel && !isARActive) currentModel.rotation.y += 0.003;
