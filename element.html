@@ -490,6 +490,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // ✅ เก็บไว้แค่ 3 ธาตุ: ทองแดง เงิน ทอง
 const elementsData = {
@@ -535,18 +536,15 @@ let isARActive = false;
 // AR Zoom Variables
 let arModels = [];
 let currentScale = 1.0;
-const MIN_SCALE = 0.5;  // ⭐ ปรับจาก 0.3 เป็น 0.5
+const MIN_SCALE = 0.5;
 const MAX_SCALE = 3.0;
-const SCALE_STEP = 0.25; // ⭐ ปรับให้ซูมนุ่มนวลขึ้น
+const SCALE_STEP = 0.25;
 
-// ⭐ XR Hand Tracking Pinch Variables
+// XR Hand Tracking Pinch Variables
 let lastPinchDistance = null;
 let isHandTrackingActive = false;
 
-// ⭐ 1. เพิ่ม flag คุมการโหลด
 let isPlacingModel = false;
-
-// ⭐ 2. สร้าง model cache
 const modelCache = {};
 
 function init() {
@@ -568,6 +566,10 @@ function init() {
     
     renderer.xr.enabled = true;
     
+    // 🔥 ตัวโกง: Tone Mapping + Exposure
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.6;
+    
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
@@ -577,17 +579,30 @@ function init() {
     controls.maxDistance = 10;
     controls.enablePan = false;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    // ✅ 1. AmbientLight แรงขึ้น (จาก 0.7 เป็น 2.0)
+    scene.add(new THREE.AmbientLight(0xffffff, 2.0));
+    
+    // Directional Light หลัก (ด้านบน)
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dirLight.position.set(3, 5, 5);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
     scene.add(dirLight);
     
+    // ✅ 2. ไฟด้านหน้า (สำคัญมาก!)
+    const frontLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    frontLight.position.set(0, 2, 5); // ยิงจากหน้ากล้อง
+    scene.add(frontLight);
+    
+    // Fill Light ด้านหลัง
     const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.5);
     fillLight.position.set(-3, 0, -5);
     scene.add(fillLight);
+
+    // ✅ 3. Environment Map (ตัวเทพ!)
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI/2);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.5 });
@@ -615,62 +630,46 @@ function init() {
         hitTestSource = null;
         hitTestSourceRequested = false;
         xrSession = null;
-        
-        // ⭐ รีเซ็ต flag ด้วย
         isPlacingModel = false;
         document.getElementById('loadingOverlay').classList.remove('visible');
-        
-        // ⭐ รีเซ็ต: กลับไปโหมด 3D ปกติ แสดงโมเดลอันเดียวแบบต้นแบบ
         resetToNormalMode();
-        
         console.log('AR Session ended - Reset to normal mode');
     });
     
-    // โหลดทองแดงเป็นค่าเริ่มต้น
     setTimeout(() => selectElement('Cu'), 500);
     
     animate();
 }
 
-// ⭐ ฟังก์ชันรีเซ็ตกลับไปโหมดปกติ
 function resetToNormalMode() {
-    // ซ่อน UI ของ AR
     document.getElementById('arZoomControls').classList.remove('visible');
     document.getElementById('zoomIndicator').classList.remove('visible');
     document.getElementById('handTrackingStatus').classList.remove('visible');
     
-    // ล้างโมเดล AR ทั้งหมด
     clearARModels();
     
-    // ⭐ รีเซ็ตค่า pinch ด้วย
     lastPinchDistance = null;
     isHandTrackingActive = false;
     
-    // โหลดโมเดลปัจจุบันกลับมาแสดงในโหมด 3D ปกติ
     if (currentModelPath) {
         loadModel(currentModelPath);
     }
     
-    // รีเซ็ตกล้องและ controls
     camera.position.set(0, 0, 5);
     controls.reset();
 }
 
-// ⭐ 3. ฟังก์ชันโหลด GLTF แบบมี cache
 function loadGLTF(path, callback) {
-    // ถ้ามีใน cache แล้ว ใช้ clone ทันที
     if (modelCache[path]) {
         console.log('Using cached model:', path);
         callback(modelCache[path].clone());
         return;
     }
 
-    // ถ้ายังไม่มี โหลดใหม่
     console.log('Loading new model:', path);
     document.getElementById('loadingOverlay').classList.add('visible');
     
     loader.load(path, (gltf) => {
-        // เก็บใน cache
         modelCache[path] = gltf.scene;
         document.getElementById('loadingOverlay').classList.remove('visible');
         callback(gltf.scene.clone());
@@ -681,7 +680,6 @@ function loadGLTF(path, callback) {
     });
 }
 
-// ⭐ ฟังก์ชันตรวจจับ Pinch ผ่าน XR Hand Tracking
 function handleXRPinch(frame) {
     const session = renderer.xr.getSession();
     if (!session) return;
@@ -779,7 +777,6 @@ function clearARModels() {
     });
     arModels = [];
     currentScale = 1.0;
-    // ⭐ รีเซ็ตค่า pinch distance ด้วย
     lastPinchDistance = null;
 }
 
@@ -845,15 +842,13 @@ window.hideARInstructions = function() {
     document.getElementById('arInstructions').classList.remove('visible');
 }
 
-// ⭐ 4. แก้ placeModelInFrontOfCamera ให้มี flag ป้องกันการโหลดซ้อน
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
-    if (isPlacingModel) return; // ⭐ ป้องกันการโหลดซ้อน
+    if (isPlacingModel) return;
 
     isPlacingModel = true;
     clearARModels();
 
-    // ⭐ ใช้ loadGLTF แทน loader.load โดยตรง
     loadGLTF(currentModelPath, (model) => {
         if (!model) {
             isPlacingModel = false;
@@ -863,7 +858,6 @@ function placeModelInFrontOfCamera() {
         const box = new THREE.Box3().setFromObject(model);
         const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
         
-        // ⭐ ปรับ scale ให้ใหญ่ขึ้น (0.9 แทน 0.5) ช่วยเรื่องต้องซูมน้อยลง
         const baseScale = 0.9 / maxDim;
         model.userData.baseScale = baseScale;
         model.userData.isARModel = true;
@@ -873,17 +867,23 @@ function placeModelInFrontOfCamera() {
         camera.getWorldPosition(camPos);
         camera.getWorldDirection(camDir);
         
-        // ⭐ อย่าวางไกลเกิน (0.8 เมตร แทน 1.5)
         const distance = 0.8;
         model.position.copy(camPos.add(camDir.multiplyScalar(distance)));
         model.position.y = 0;
         
         model.scale.setScalar(baseScale * currentScale);
         
+        // ⭐ เทคนิค PRO: เพิ่ม emissive นิดหน่อย
         model.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = true; 
-                c.receiveShadow = true; 
+                c.receiveShadow = true;
+                
+                // เพิ่มแสงในตัวโมเดล
+                if (c.material) {
+                    c.material.emissive = new THREE.Color(0x222222);
+                    c.material.emissiveIntensity = 0.25;
+                }
             }
         });
         
@@ -892,7 +892,7 @@ function placeModelInFrontOfCamera() {
         
         animateModelEntry(model, baseScale * currentScale);
         
-        isPlacingModel = false; // ⭐ ปลดล็อก
+        isPlacingModel = false;
         updateZoomButtonStates();
     });
 }
@@ -981,7 +981,6 @@ function showInfo() {
     document.getElementById('info-toggle').classList.add('hidden');
 }
 
-// ⭐ แก้ loadModel ให้ใช้ cache ด้วย
 function loadModel(filePath) {
     if (currentModel) {
         scene.remove(currentModel);
@@ -990,7 +989,6 @@ function loadModel(filePath) {
     
     loadGLTF(filePath, (model) => {
         if (!model) {
-            // สร้างโมเดลสำรองถ้าโหลดไม่สำเร็จ
             const geo = new THREE.IcosahedronGeometry(0.8, 2);
             const mat = new THREE.MeshStandardMaterial({ 
                 color: 0x3b82f6, 
@@ -1015,10 +1013,16 @@ function loadModel(filePath) {
         currentModel.position.sub(center.multiplyScalar(scale));
         currentModel.position.y += 0.5;
         
+        // ⭐ เทคนิค PRO: เพิ่ม emissive ในโหมดปกติด้วย
         currentModel.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = true; 
-                c.receiveShadow = true; 
+                c.receiveShadow = true;
+                
+                if (c.material) {
+                    c.material.emissive = new THREE.Color(0x222222);
+                    c.material.emissiveIntensity = 0.25;
+                }
             }
         });
         scene.add(currentModel);
