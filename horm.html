@@ -17,7 +17,6 @@
             -webkit-touch-callout: none;
         }
 
-        /* Sidebar - ซ่อนไว้บนมือถือ แสดงบน desktop */
         .sidebar {
             width: 200px;
             background-color: #2c3e50;
@@ -51,9 +50,10 @@
             background-color: #e74c3c;
         }
 
-        /* ปุ่มฟันเฟือง - อยู่ด้านล่างสุดของ sidebar */
-        .settings-btn-sidebar {
-            margin-top: auto;
+        /* ปุ่มฟันเฟือง - อยู่ใต้ปุ่มหิน ห่าง 3 เท่า (45px) */
+        .settings-btn {
+            /* ตำแหน่งที่แก้ไข: เปลี่ยนจาก margin-top: auto เป็น margin-top: 45px */
+            margin-top: 45px; /* ห่างจากปุ่มหิน 3 เท่า (ปกติ gap 15px × 3 = 45px) */
             background-color: #34495e !important;
             border: 2px solid #465f75 !important;
             display: flex;
@@ -63,7 +63,7 @@
             font-size: 14px !important;
         }
 
-        .settings-btn-sidebar:hover {
+        .settings-btn:hover {
             background-color: #465f75 !important;
         }
 
@@ -72,7 +72,6 @@
             position: relative;
             padding: 20px;
             transition: background-color 0.3s ease;
-            padding-bottom: 100px; /* เว้นที่สำหรับ bottom nav */
         }
 
         .iframe-container {
@@ -100,102 +99,35 @@
             display: block;
         }
 
-        /* Bottom Navigation Bar - ใหม่ */
-        .bottom-nav {
-            position: fixed;
+        .bottom-bar {
+            position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+            background-color: rgba(0,0,0,0.05);
+            padding: 15px;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
-            z-index: 1000;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-            border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 20;
+            transition: background-color 0.3s ease;
         }
 
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-            color: #95a5a6;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-family: inherit;
-        }
-
-        .nav-item:hover {
-            color: #ecf0f1;
-            transform: translateY(-2px);
-        }
-
-        .nav-item.active {
-            color: #3498db;
-        }
-
-        .nav-item.active .nav-icon {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-        }
-
-        .nav-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin-bottom: 4px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-label {
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        /* ปุ่มตั้งค่าใน bottom nav - อยู่ตรงกลาง */
-        .nav-item.settings-nav {
-            position: relative;
-        }
-
-        .nav-item.settings-nav .nav-icon {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            font-size: 22px;
-        }
-
-        .nav-item.settings-nav:hover .nav-icon {
-            background: linear-gradient(135deg, #af7ac5, #9b59b6);
-            transform: scale(1.1);
-        }
-
-        /* Modal ตั้งค่าเสียง - ปรับให้อยู่เหนือ bottom nav */
+        /* Modal ตั้งค่าเสียง */
         .settings-modal {
             display: none;
             position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 320px;
-            max-height: 60vh;
+            bottom: 80px;
+            left: 20px;
+            width: 280px;
+            max-height: 70vh;
             overflow-y: auto;
             background: rgba(44, 62, 80, 0.98);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 15px;
             padding: 20px;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
-            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 100;
             border: 1px solid rgba(255,255,255,0.1);
             animation: slideUp 0.3s ease;
         }
@@ -203,11 +135,11 @@
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateX(-50%) translateY(20px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
             }
         }
 
@@ -311,7 +243,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            max-height: 150px;
+            max-height: 200px;
             overflow-y: auto;
         }
 
@@ -365,45 +297,57 @@
             color: white;
         }
 
-        /* Overlay สำหรับปิด modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-
-        .modal-overlay.show {
-            display: block;
-        }
-
         @media (max-width: 768px) {
             .sidebar {
-                display: none; /* ซ่อน sidebar บนมือถือ */
+                position: absolute;
+                height: 100vh;
+                transform: translateX(-100%);
+                width: 250px;
+                z-index: 40;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            /* ตำแแหน่งที่แก้ไข: ปุ่มเมนูบนมือถือ */
+            .menu-toggle {
+                position: fixed;
+                top: 15px;        /* แก้ตรงนี้: ระยะจากด้านบน */
+                left: 20px;       /* แก้ตรงนี้: ระยะจากด้านซ้าย */
+                z-index: 50;
+                background: #2c3e50;
+                color: white;
+                border: none;
+                padding: 12px 15px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                display: none;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             }
 
             .content {
-                padding: 15px;
-                padding-bottom: 100px;
-                width: 100%;
+                padding: 20px 15px;
             }
 
+            .bottom-bar {
+                padding: 10px;
+            }
+
+            /* บนมือถือให้ modal อยู่ตรงกลาง */
             .settings-modal {
-                bottom: 80px;
+                left: 50%;
+                bottom: auto;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 320px;
+                max-height: 80vh;
             }
-        }
-
-        @media (min-width: 769px) {
-            .bottom-nav {
-                display: none; /* ซ่อน bottom nav บน desktop */
-            }
-
-            .content {
-                padding-bottom: 20px;
+            
+            .settings-modal.show {
+                display: block;
             }
         }
 
@@ -424,45 +368,20 @@
 
 <body>
 
-    <!-- Sidebar สำหรับ Desktop -->
+    <!-- ตำแหน่งที่แก้ไข: ปุ่มเมนู (☰ เมนู) -->
+    <button class="menu-toggle" id="menuToggle" style="display: none;">☰ เมนู</button>
+
     <div class="sidebar" id="sidebar">
-        <button id="periodicBtnDesktop" onclick="loadPage('element.html', 'periodic')">ตารางธาตุ</button>
-        <button id="solarBtnDesktop" onclick="loadPage('solar.html', 'solar')">ระบบสุริยะ</button>
-        <button id="rockBtnDesktop" onclick="loadPage('rock.html', 'horm')">หิน</button>
+        <button id="periodicBtn" onclick="loadPage('element.html', 'periodic')">ตารางธาตุ</button>
+        <button id="solarBtn" onclick="loadPage('solar.html', 'solar')">ระบบสุริยะ</button>
+        <button id="rockBtn" onclick="loadPage('rock.html', 'horm')">หิน</button>
         
-        <!-- ปุ่มฟันเฟืองใน sidebar -->
-        <button class="settings-btn-sidebar" onclick="toggleSettings()" title="ตั้งค่าเสียง">
+        <!-- ตำแหน่งที่แก้ไข: ปุ่มตั้งค่าอยู่ใต้ปุ่มหิน ห่าง 3 เท่า -->
+        <button class="settings-btn" onclick="toggleSettings()" title="ตั้งค่าเสียง">
             <span>⚙️</span>
             <span>ตั้งค่าเสียง</span>
         </button>
     </div>
-
-    <!-- Bottom Navigation Bar สำหรับ Mobile -->
-    <nav class="bottom-nav" id="bottomNav">
-        <button class="nav-item" id="periodicBtnMobile" onclick="loadPage('element.html', 'periodic')">
-            <div class="nav-icon">⚗️</div>
-            <span class="nav-label">ธาตุ</span>
-        </button>
-        
-        <!-- ปุ่มตั้งค่าอยู่ตรงกลาง -->
-        <button class="nav-item settings-nav" onclick="toggleSettings()">
-            <div class="nav-icon">⚙️</div>
-            <span class="nav-label">ตั้งค่า</span>
-        </button>
-        
-        <button class="nav-item" id="rockBtnMobile" onclick="loadPage('rock.html', 'horm')">
-            <div class="nav-icon">🪨</div>
-            <span class="nav-label">หิน</span>
-        </button>
-        
-        <button class="nav-item" id="solarBtnMobile" onclick="loadPage('solar.html', 'solar')">
-            <div class="nav-icon">🌌</div>
-            <span class="nav-label">สุริยะ</span>
-        </button>
-    </nav>
-
-    <!-- Overlay สำหรับปิด modal -->
-    <div class="modal-overlay" id="modalOverlay" onclick="toggleSettings()"></div>
 
     <!-- Modal ตั้งค่าเสียง -->
     <div class="settings-modal" id="settingsModal">
@@ -508,6 +427,9 @@
             <div class="content-overlay">
             </div>
         </div>
+
+        <div class="bottom-bar" id="bottomBar">
+        </div>
     </div>
 
     <script>
@@ -525,7 +447,6 @@
         const volumeSlider = document.getElementById('volumeSlider');
         const volumeValue = document.getElementById('volumeValue');
         const settingsModal = document.getElementById('settingsModal');
-        const modalOverlay = document.getElementById('modalOverlay');
         const trackList = document.getElementById('trackList');
         
         // 🎵 กำหนด 5 ไฟล์เสียง
@@ -542,6 +463,17 @@
         let currentVolume = 50;
 
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        if (isMobile) {
+            menuToggle.style.display = 'block';
+        }
+
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('show');
+        });
 
         // สร้างปุ่มเลือกเพลง
         function createTrackButtons() {
@@ -588,7 +520,6 @@
         // ฟังก์ชันเปิด/ปิด Modal ตั้งค่า
         function toggleSettings() {
             settingsModal.classList.toggle('show');
-            modalOverlay.classList.toggle('show');
         }
 
         // ฟังก์ชันเปิด/ปิดเสียง
@@ -618,46 +549,52 @@
             localStorage.setItem('volume', value);
         }
 
-        // อัปเดตสถานะปุ่ม active ทั้ง desktop และ mobile
+        // อัปเดตสถานะปุ่ม active
         function updateButtonStates(activePage) {
-            // Desktop buttons
-            document.getElementById('periodicBtnDesktop').classList.remove('active');
-            document.getElementById('solarBtnDesktop').classList.remove('active');
-            document.getElementById('rockBtnDesktop').classList.remove('active');
-            
-            // Mobile buttons
-            document.getElementById('periodicBtnMobile').classList.remove('active');
-            document.getElementById('solarBtnMobile').classList.remove('active');
-            document.getElementById('rockBtnMobile').classList.remove('active');
+            document.getElementById('periodicBtn').classList.remove('active');
+            document.getElementById('solarBtn').classList.remove('active');
+            document.getElementById('rockBtn').classList.remove('active');
             
             if (activePage === 'periodic') {
-                document.getElementById('periodicBtnDesktop').classList.add('active');
-                document.getElementById('periodicBtnMobile').classList.add('active');
+                document.getElementById('periodicBtn').classList.add('active');
             } else if (activePage === 'solar') {
-                document.getElementById('solarBtnDesktop').classList.add('active');
-                document.getElementById('solarBtnMobile').classList.add('active');
+                document.getElementById('solarBtn').classList.add('active');
             } else if (activePage === 'horm') {
-                document.getElementById('rockBtnDesktop').classList.add('active');
-                document.getElementById('rockBtnMobile').classList.add('active');
+                document.getElementById('rockBtn').classList.add('active');
             }
         }
 
-        // 🔧 ฟังก์ชันโหลดหน้า - แก้ไขให้กดซ้ำได้ (toggle)
+        // ฟังก์ชันโหลดหน้า
         function loadPage(url, pageType) {
             if (currentPage === pageType) {
-                // กดซ้ำปุ่มเดิม → ปิดหน้านั้น
                 contentFrame.src = '';
                 mainContent.classList.remove('page-active');
                 currentPage = null;
                 updateButtonStates(null);
             } else {
-                // กดปุ่มใหม่ หรือ เปิดจากปิดอยู่ → เปิดหน้านั้น
                 contentFrame.src = url;
                 mainContent.classList.add('page-active');
                 currentPage = pageType;
                 updateButtonStates(pageType);
             }
+            
+            if (isMobile) {
+                sidebar.classList.remove('show');
+            }
         }
+
+        // ปิด modal เมื่อคลิกนอกพื้นที่
+        document.addEventListener('click', (e) => {
+            if (!settingsModal.contains(e.target) && !e.target.closest('.settings-btn')) {
+                settingsModal.classList.remove('show');
+            }
+            
+            if (isMobile && sidebar.classList.contains('show')) {
+                if (!sidebar.contains(e.target) && !e.target.closest('.menu-toggle')) {
+                    sidebar.classList.remove('show');
+                }
+            }
+        });
 
         // โหลดการตั้งค่าจาก localStorage
         window.addEventListener('load', () => {
@@ -688,7 +625,6 @@
             }
         });
 
-        // รับข้อความจาก iframe
         window.addEventListener('message', (event) => {
             console.log('Message from iframe:', event.data);
         });
