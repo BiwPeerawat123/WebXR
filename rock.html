@@ -606,7 +606,7 @@ let initialPinchScale = 1.0;
 let isPinching = false;
 let touches = new Map();
 
-// ⭐⭐⭐ NEW: Rotation variables for AR
+// Rotation variables for AR
 let isRotating = false;
 let previousTouchPosition = { x: 0, y: 0 };
 let rotationVelocity = { x: 0, y: 0 };
@@ -616,11 +616,17 @@ const ROTATION_DAMPING = 0.95;
 let isLoadingARModel = false;
 const modelCache = {};
 
+// ⭐⭐⭐ NEW: Constants for perfect center positioning
+const NORMAL_MODE_DISTANCE = 3.5; // ระยะกล้องในโหมด 3D ธรรมดา
+const AR_MODE_DISTANCE = 1.2;     // ระยะวางโมเดลใน AR (ใกล้กว่าเล็กน้อย)
+const IDEAL_MODEL_HEIGHT = 1.5;   // ความสูงโมเดลที่ต้องการแสดง (หน่วย: เมตรจำลอง)
+
 function init() {
     scene = new THREE.Scene();
 
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 4);
+    // ⭐ ตั้งกล้องให้อยู่ตรงกลางพอดี
+    camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
 
     renderer = new THREE.WebGLRenderer({ 
         antialias: true, 
@@ -640,22 +646,32 @@ function init() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    // ⭐ จำกัดระยะกล้องให้อยู่ในช่วงที่เหมาะสม
     controls.minDistance = 2;
-    controls.maxDistance = 8;
+    controls.maxDistance = 6;
     controls.enablePan = false;
+    // ⭐ จำกัดมุมมองแนวตั้งเพื่อไม่ให้ดูจากใต้โมเดล
+    controls.maxPolarAngle = Math.PI / 1.5;
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(3, 5, 5);
+    // Enhanced Lighting for better visibility
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(5, 10, 7);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
     scene.add(dirLight);
     
-    const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.5);
-    fillLight.position.set(-3, 0, -5);
-    scene.add(fillLight);
+    // Fill light from front
+    const frontLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    frontLight.position.set(0, 0, 5);
+    scene.add(frontLight);
+    
+    // Back light for rim effect
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    backLight.position.set(0, 5, -5);
+    scene.add(backLight);
 
     // Reticle
     const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI/2);
@@ -732,15 +748,16 @@ function resetToNormalMode() {
     targetScale = 1.0;
     baseScale = 0.5;
     
-    // Reset rotation variables
     rotationVelocity = { x: 0, y: 0 };
     isRotating = false;
+    
+    // ⭐ รีเซ็ตกล้องกลับไปตำแหน่งเริ่มต้น
+    camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
     
     if (currentModelPath) {
         loadModel(currentModelPath);
     }
     
-    camera.position.set(0, 0, 4);
     controls.reset();
 }
 
@@ -807,7 +824,6 @@ function updateZoomButtonStates() {
     zoomInBtn.disabled = targetScale >= MAX_SCALE;
 }
 
-// ⭐⭐⭐ NEW: Setup touch events with rotation support
 function setupTouchEvents() {
     const canvas = renderer.domElement;
     
@@ -817,7 +833,6 @@ function setupTouchEvents() {
     canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 }
 
-// ⭐⭐⭐ NEW: Handle touch start with rotation detection
 function handleTouchStart(e) {
     if (!isARActive) return;
     
@@ -829,7 +844,6 @@ function handleTouchStart(e) {
     }
     
     if (e.touches.length === 1 && currentARModel) {
-        // Single touch - start rotation
         isRotating = true;
         previousTouchPosition = {
             x: e.touches[0].clientX,
@@ -837,14 +851,11 @@ function handleTouchStart(e) {
         };
         rotationVelocity = { x: 0, y: 0 };
         e.preventDefault();
-        
-        // Show rotation hint briefly
         showRotationHint();
         
     } else if (e.touches.length === 2) {
-        // Two touches - start pinch zoom
         isPinching = true;
-        isRotating = false; // Disable rotation while pinching
+        isRotating = false;
         const touchArray = Array.from(e.touches);
         initialPinchDistance = getDistance(
             touchArray[0].clientX, touchArray[0].clientY,
@@ -855,7 +866,6 @@ function handleTouchStart(e) {
     }
 }
 
-// ⭐⭐⭐ NEW: Handle touch move with rotation
 function handleTouchMove(e) {
     if (!isARActive) return;
     
@@ -866,20 +876,13 @@ function handleTouchMove(e) {
         const deltaX = touch.clientX - previousTouchPosition.x;
         const deltaY = touch.clientY - previousTouchPosition.y;
         
-        // Calculate rotation based on touch movement
-        // Horizontal drag = rotate around Y axis (left/right)
-        // Vertical drag = rotate around X axis (up/down)
         const rotateY = deltaX * ROTATION_SENSITIVITY;
         const rotateX = deltaY * ROTATION_SENSITIVITY;
         
-        // Apply rotation to model
         currentARModel.rotation.y += rotateY;
         currentARModel.rotation.x += rotateX;
-        
-        // Clamp X rotation to prevent flipping upside down
         currentARModel.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, currentARModel.rotation.x));
         
-        // Store velocity for inertia
         rotationVelocity.x = rotateX;
         rotationVelocity.y = rotateY;
         
@@ -904,7 +907,6 @@ function handleTouchMove(e) {
         showScaleIndicator();
     }
     
-    // Update touches map
     for (let touch of e.touches) {
         touches.set(touch.identifier, {
             x: touch.clientX,
@@ -913,19 +915,16 @@ function handleTouchMove(e) {
     }
 }
 
-// ⭐⭐⭐ NEW: Handle touch end
 function handleTouchEnd(e) {
     for (let touch of e.changedTouches) {
         touches.delete(touch.identifier);
     }
     
     if (e.touches.length === 0) {
-        // All touches released
         isRotating = false;
         isPinching = false;
         initialPinchDistance = 0;
     } else if (e.touches.length === 1 && isPinching) {
-        // Transition from pinch to single touch (rotation)
         isPinching = false;
         isRotating = true;
         previousTouchPosition = {
@@ -934,7 +933,6 @@ function handleTouchEnd(e) {
         };
     }
     
-    // Update remaining touches
     for (let touch of e.touches) {
         touches.set(touch.identifier, {
             x: touch.clientX,
@@ -947,7 +945,6 @@ function getDistance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
-// ⭐⭐⭐ NEW: Show rotation hint
 function showRotationHint() {
     const hint = document.getElementById('rotation-hint');
     hint.classList.add('visible');
@@ -987,7 +984,6 @@ async function startAR() {
         document.getElementById('zoom-controls').classList.add('active');
         document.getElementById('reset-scale').classList.add('active');
         
-        // Show rotation hint after entering AR
         setTimeout(showRotationHint, 1000);
         
         renderer.xr.setReferenceSpaceType('local');
@@ -1010,6 +1006,7 @@ async function startAR() {
     }
 }
 
+// ⭐⭐⭐ IMPROVED: Place model perfectly centered in AR
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
     if (isLoadingARModel) return;
@@ -1027,29 +1024,41 @@ function placeModelInFrontOfCamera() {
             return;
         }
 
+        // ⭐ คำนวณขนาดกล่องครอบโมเดล
         const box = new THREE.Box3().setFromObject(model);
-        const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
-        baseScale = 0.5 / maxDim;
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const center = box.getCenter(new THREE.Vector3());
+        
+        // ⭐ คำนวณ scale ให้โมเดลมีขนาดพอดีกับหน้าจอ
+        // ต้องการให้โมเดลสูงประมาณ 1/3 ของความสูงหน้าจอ (ประมาณ 1.5 หน่วยในโลก 3D)
+        baseScale = IDEAL_MODEL_HEIGHT / maxDim;
         
         currentScale = 1.0;
         targetScale = 1.0;
         
-        model.scale.setScalar(baseScale * currentScale);
-        
+        // ⭐ วางโมเดลตรงกลางสายตา ระยะที่เหมาะสม
         const cameraPosition = new THREE.Vector3();
         const cameraDirection = new THREE.Vector3();
         camera.getWorldPosition(cameraPosition);
         camera.getWorldDirection(cameraDirection);
         
-        const distance = 1.5;
-        const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(distance));
-        targetPosition.y = 0;
+        // วางที่ระยะ AR_MODE_DISTANCE เมตร ตรงกลางสายตา
+        const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(AR_MODE_DISTANCE));
+        
+        // ปรับความสูงให้อยู่ตรงกลางแนวตั้ง (ไม่ต่ำหรือสูงเกินไป)
+        targetPosition.y = cameraPosition.y - 0.2; // ต่ำกว่าระดับสายตาเล็กน้อย
         
         model.position.copy(targetPosition);
-        model.lookAt(cameraPosition.x, model.position.y, cameraPosition.z);
         
-        // ⭐⭐⭐ Reset rotation when placing new model
+        // ⭐ รีเซ็ตการหมุนและยกเลิกการ lookAt เพื่อให้โมเดลหันหน้าตรง
         model.rotation.set(0, 0, 0);
+        
+        // ปรับ scale
+        model.scale.setScalar(baseScale * currentScale);
+        
+        // ย้ายจุดศูนย์กลางโมเดลไปที่ตำแหน่งที่ต้องการ
+        model.position.sub(center.multiplyScalar(baseScale * currentScale));
         
         model.traverse(c => { 
             if(c.isMesh) { 
@@ -1062,12 +1071,16 @@ function placeModelInFrontOfCamera() {
         currentARModel = model;
         scene.add(model);
         
-        // Animation entry
+        // Animation entry - ค่อยๆ ขยายจากศูนย์
         model.scale.setScalar(0);
         let s = 0;
         const entry = setInterval(() => {
-            s += 0.1;
-            model.scale.setScalar(s * baseScale * currentScale);
+            s += 0.08; // ช้าลงเล็กน้อยให้ดูสวย
+            const currentS = s * baseScale * currentScale;
+            model.scale.setScalar(currentS);
+            // ปรับตำแหน่งตาม scale เพื่อให้อยู่ตรงกลาง
+            model.position.copy(targetPosition).sub(center.clone().multiplyScalar(currentS));
+            
             if(s >= 1) {
                 clearInterval(entry);
                 updateZoomButtonStates();
@@ -1144,6 +1157,7 @@ function showInfo() {
     document.getElementById('info-toggle').classList.add('hidden');
 }
 
+// ⭐⭐⭐ IMPROVED: Load model perfectly centered in normal 3D mode
 function loadModel(filePath) {
     if (currentModel) {
         scene.remove(currentModel);
@@ -1155,6 +1169,7 @@ function loadModel(filePath) {
         document.getElementById('loader').style.display = 'none';
         
         if (!model) {
+            // Fallback geometry if model fails to load
             const geo = new THREE.DodecahedronGeometry(0.8, 1);
             const mat = new THREE.MeshStandardMaterial({ 
                 color: 0x8b5cf6, 
@@ -1162,21 +1177,32 @@ function loadModel(filePath) {
                 metalness: 0.3
             });
             currentModel = new THREE.Mesh(geo, mat);
-            currentModel.position.y = 0.5;
+            currentModel.position.y = 0;
             scene.add(currentModel);
             return;
         }
 
         currentModel = model;
         
+        // ⭐ คำนวณขนาดและตำแหน่งให้อยู่ตรงกลาง
         const box = new THREE.Box3().setFromObject(currentModel);
+        const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
-        const maxDim = Math.max(...box.getSize(new THREE.Vector3()).toArray());
-        const scale = 2 / maxDim;
+        const maxDim = Math.max(size.x, size.y, size.z);
         
+        // คำนวณ scale ให้โมเดลพอดีกับหน้าจอ (ประมาณ 40% ของความสูง viewport)
+        const targetHeight = 1.2; // หน่วย: เมตรจำลอง
+        const scale = targetHeight / maxDim;
+        
+        // รีเซ็ต scale และ position
         currentModel.scale.setScalar(scale);
+        
+        // ย้ายโมเดลให้อยู่ตรงกลาง (0, 0, 0) โดยคำนึงถึง pivot point
         currentModel.position.sub(center.multiplyScalar(scale));
-        currentModel.position.y += 0.5;
+        
+        // ⭐ ปรับระยะกล้องอัตโนมัติตามขนาดโมเดล
+        const optimalDistance = maxDim * scale * 2.5; // ระยะที่เหมาะสม = 2.5 เท่าของขนาดโมเดล
+        camera.position.z = Math.max(2.5, Math.min(5, optimalDistance));
         
         currentModel.traverse(c => { 
             if(c.isMesh) { 
@@ -1186,11 +1212,14 @@ function loadModel(filePath) {
         });
         scene.add(currentModel);
         
+        // Animation entry
         let s = 0;
         const entry = setInterval(() => {
             s += 0.1;
-            currentModel.scale.setScalar(s * scale);
-            currentModel.rotation.y += 0.1;
+            const currentS = s * scale;
+            currentModel.scale.setScalar(currentS);
+            currentModel.position.copy(center.clone().multiplyScalar(-currentS));
+            currentModel.rotation.y += 0.15;
             if(s >= 1) {
                 clearInterval(entry);
                 currentModel.rotation.y = 0;
@@ -1227,27 +1256,48 @@ function render(timestamp, frame) {
     controls.update();
     
     if (currentARModel && isARActive) {
-        // Smooth zoom
+        // Smooth zoom with position adjustment to keep centered
+        const oldScale = currentScale;
         currentScale += (targetScale - currentScale) * SMOOTH_FACTOR;
-        const finalScale = baseScale * currentScale;
-        currentARModel.scale.setScalar(finalScale);
         
-        // ⭐⭐⭐ NEW: Apply rotation inertia when not touching
+        if (Math.abs(currentScale - oldScale) > 0.001) {
+            const finalScale = baseScale * currentScale;
+            currentARModel.scale.setScalar(finalScale);
+            
+            // Recalculate position to keep model centered
+            const box = new THREE.Box3().setFromObject(currentARModel);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            
+            // Keep model at same world position but adjust for scale change
+            const cameraPosition = new THREE.Vector3();
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+            camera.getWorldDirection(cameraDirection);
+            
+            const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(AR_MODE_DISTANCE));
+            targetPosition.y = cameraPosition.y - 0.2;
+            
+            currentARModel.position.copy(targetPosition).sub(center);
+        }
+        
+        // Rotation inertia
         if (!isRotating) {
             currentARModel.rotation.y += rotationVelocity.y;
             currentARModel.rotation.x += rotationVelocity.x;
-            
-            // Damping
             rotationVelocity.x *= ROTATION_DAMPING;
             rotationVelocity.y *= ROTATION_DAMPING;
             
-            // Stop very small velocities
             if (Math.abs(rotationVelocity.x) < 0.001) rotationVelocity.x = 0;
             if (Math.abs(rotationVelocity.y) < 0.001) rotationVelocity.y = 0;
         }
     }
     
-    if (currentModel && !isARActive) currentModel.rotation.y += 0.003;
+    // Auto-rotate in normal mode
+    if (currentModel && !isARActive) {
+        currentModel.rotation.y += 0.003;
+    }
+    
     renderer.render(scene, camera);
 }
 
