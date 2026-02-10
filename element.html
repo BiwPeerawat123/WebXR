@@ -435,7 +435,11 @@
     <div class="loading-text">กำลังโหลดโมเดล...</div>
 </div>
 
-
+<!-- AR Mode Indicator -->
+<div id="ar-indicator" class="ar-mode-indicator">
+    <span>🥽</span>
+    <span>AR Mode</span>
+</div>
 
 <!-- AR Zoom Controls -->
 <div id="zoom-controls" class="ar-zoom-controls">
@@ -443,9 +447,28 @@
     <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
 
+<!-- Reset Scale Button -->
+<button id="reset-scale" class="reset-scale-btn" title="รีเซ็ตขนาด">
+    ↺ รีเซ็ต
+</button>
 
+<!-- Scale Indicator -->
+<div id="scale-indicator" class="scale-indicator">100%</div>
 
+<!-- Rotation Hint -->
+<div id="rotation-hint" class="rotation-hint">
+    <span>👆</span>
+    <span>ลากเพื่อหมุน</span>
+</div>
 
+<!-- AR Instructions -->
+<div id="arInstructions" class="ar-instructions" onclick="hideARInstructions()">
+    <h3>📱 คำแนะนำ AR</h3>
+    <p>• แตะหน้าจอเพื่อวางโมเดล</p>
+    <p>• ใช้สองนิ้วเพื่อซูมเข้า/ออก</p>
+    <p>• ลากด้วยนิ้วเดียวเพื่อหมุน</p>
+    <p style="margin-top: 10px; color: #60a5fa; font-size: 12px;">แตะเพื่อเริ่มใช้งาน</p>
+</div>
 
 <!-- UI Layer -->
 <div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
@@ -891,11 +914,17 @@ function showRotationHint() {
 }
 
 function resetToNormalMode() {
-    document.getElementById('ar-indicator').classList.remove('active');
-    document.getElementById('zoom-controls').classList.remove('visible');
-    document.getElementById('reset-scale').classList.remove('active');
-    document.getElementById('scale-indicator').classList.remove('visible');
-    document.getElementById('rotation-hint').classList.remove('visible');
+    const arIndicator = document.getElementById('ar-indicator');
+    const zoomControls = document.getElementById('zoom-controls');
+    const resetScale = document.getElementById('reset-scale');
+    const scaleIndicator = document.getElementById('scale-indicator');
+    const rotationHint = document.getElementById('rotation-hint');
+    
+    if (arIndicator) arIndicator.classList.remove('active');
+    if (zoomControls) zoomControls.classList.remove('visible');
+    if (resetScale) resetScale.classList.remove('active');
+    if (scaleIndicator) scaleIndicator.classList.remove('visible');
+    if (rotationHint) rotationHint.classList.remove('visible');
     
     if (currentARModel) {
         scene.remove(currentARModel);
@@ -965,10 +994,15 @@ async function startAR() {
         currentScale = 1.0;
         targetScale = 1.0;
         
-        document.getElementById('ar-indicator').classList.add('active');
-        document.getElementById('zoom-controls').classList.add('visible');
-        document.getElementById('reset-scale').classList.add('active');
-        document.getElementById('arInstructions').classList.add('visible');
+        const arIndicator = document.getElementById('ar-indicator');
+        const zoomControls = document.getElementById('zoom-controls');
+        const resetScale = document.getElementById('reset-scale');
+        const arInstructions = document.getElementById('arInstructions');
+        
+        if (arIndicator) arIndicator.classList.add('active');
+        if (zoomControls) zoomControls.classList.add('visible');
+        if (resetScale) resetScale.classList.add('active');
+        if (arInstructions) arInstructions.classList.add('visible');
         
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
@@ -991,7 +1025,8 @@ async function startAR() {
 }
 
 window.hideARInstructions = function() {
-    document.getElementById('arInstructions').classList.remove('visible');
+    const arInstructions = document.getElementById('arInstructions');
+    if (arInstructions) arInstructions.classList.remove('visible');
 }
 
 // ⭐⭐⭐ IMPROVED: Place model perfectly centered
