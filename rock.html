@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+html_code = '''<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -254,28 +255,14 @@
             .camera-button { padding: 5px 10px; font-size: 9px; }
         }
 
+        /* REMOVED: .ar-controls - no longer visible but functionality kept */
         .ar-controls {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            display: none;
-            pointer-events: none;
+            display: none !important;
         }
 
-        .ar-controls.active {
-            display: block;
-        }
-
+        /* REMOVED: .scale-hint - no longer visible but functionality kept */
         .scale-hint {
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            backdrop-filter: blur(4px);
-            white-space: nowrap;
+            display: none !important;
         }
 
         .zoom-controls {
@@ -322,32 +309,9 @@
             cursor: not-allowed;
         }
 
+        /* REMOVED: .reset-scale-btn - old reset button removed */
         .reset-scale-btn {
-            position: fixed;
-            bottom: 120px;
-            right: 10px;
-            z-index: 100;
-            display: none;
-            pointer-events: auto;
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            color: #333;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            backdrop-filter: blur(4px);
-            transition: all 0.2s;
-        }
-
-        .reset-scale-btn.active {
-            display: block;
-        }
-
-        .reset-scale-btn:active {
-            transform: scale(0.95);
+            display: none !important;
         }
 
         .ar-mode-indicator {
@@ -420,27 +384,9 @@
             opacity: 1;
         }
 
+        /* REMOVED: .rotation-hint - no longer visible but functionality kept */
         .rotation-hint {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 100;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .rotation-hint.visible {
-            opacity: 1;
+            display: none !important;
         }
 
         .loading-overlay {
@@ -480,6 +426,41 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 10px;
         }
+
+        /* New Clear Screen Button */
+        .clear-screen-btn {
+            position: fixed;
+            bottom: 120px;
+            right: 10px;
+            z-index: 100;
+            display: none;
+            pointer-events: auto;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clear-screen-btn.active {
+            display: flex;
+        }
+
+        .clear-screen-btn:active {
+            transform: scale(0.95);
+        }
+
+        .clear-screen-btn:hover {
+            box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+        }
     </style>
 
     <script type="importmap">
@@ -514,6 +495,7 @@
     <span>Camera Mode</span>
 </div>
 
+<!-- REMOVED from view: ar-controls (ใช้ 2 นิ้วเพื่อซูม) - functionality kept in JS -->
 <div id="ar-controls" class="ar-controls">
     <div class="scale-hint">ใช้ 2 นิ้วเพื่อซูม</div>
 </div>
@@ -523,16 +505,24 @@
     <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
 
+<!-- REMOVED from view: reset-scale (↺ รีเซ็ต) - replaced with clear-screen -->
 <button id="reset-scale" class="reset-scale-btn" title="รีเซ็ตขนาด">
     ↺ รีเซ็ต
 </button>
 
 <div id="scale-indicator" class="scale-indicator">100%</div>
 
+<!-- REMOVED from view: rotation-hint (👆 ลากเพื่อหมุน) - functionality kept in JS -->
 <div id="rotation-hint" class="rotation-hint">
     <span>👆</span>
     <span>ลากเพื่อหมุน</span>
 </div>
+
+<!-- New Clear Screen Button -->
+<button id="clear-screen" class="clear-screen-btn" title="ล้างหน้าจอ">
+    <span>🗑️</span>
+    <span>ล้างหน้าจอ</span>
+</button>
 
 <div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
     <div class="pointer-events-auto p-2 flex justify-between items-center bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm">
@@ -643,6 +633,7 @@ const rocksData = {
 let camera, scene, renderer, controls, loader;
 let currentModel = null;
 let isInfoVisible = false;
+let hasUserSelectedRock = false; // Track if user has selected any rock
 
 let controller;
 let reticle;
@@ -753,6 +744,7 @@ function init() {
     
     document.getElementById('arBtn').addEventListener('click', toggleAR);
     document.getElementById('cameraBtn').addEventListener('click', toggleCamera);
+    document.getElementById('clear-screen').addEventListener('click', clearScreen);
     
     videoElement = document.getElementById('camera-feed');
     
@@ -771,9 +763,41 @@ function init() {
         resetToNormalMode();
     });
     
-    setTimeout(() => selectRock('basalt'), 500);
+    // REMOVED: Don't auto-select rock on init - wait for user click
+    // setTimeout(() => selectRock('basalt'), 500);
     
     animate();
+}
+
+// New function to clear screen
+function clearScreen() {
+    // Remove current model from scene
+    if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
+    }
+    
+    // Remove AR model if exists
+    if (currentARModel) {
+        scene.remove(currentARModel);
+        currentARModel = null;
+    }
+    
+    // Reset state
+    currentModelPath = null;
+    hasUserSelectedRock = false;
+    
+    // Hide info panel
+    isInfoVisible = false;
+    document.getElementById('info-panel').classList.add('hidden-panel');
+    document.getElementById('info-toggle').classList.add('hidden');
+    
+    // Hide clear screen button
+    document.getElementById('clear-screen').classList.remove('active');
+    
+    // Reset camera position
+    camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
+    controls.reset();
 }
 
 async function toggleCamera() {
@@ -805,7 +829,8 @@ async function startCamera() {
             currentModel = null;
         }
         
-        if (currentModelPath) {
+        // Only load model if user has selected one
+        if (currentModelPath && hasUserSelectedRock) {
             loadCameraModel(currentModelPath);
         }
     } catch (err) {
@@ -825,12 +850,16 @@ function stopCamera() {
     document.getElementById('cameraBtn').classList.remove('active');
     document.getElementById('camera-indicator').classList.remove('active');
     
+    // FIX: Restore original background image when stopping camera
+    document.body.style.backgroundImage = "url('models/background.jpg')";
+    
     if (currentModel) {
         scene.remove(currentModel);
         currentModel = null;
     }
     
-    if (currentModelPath) {
+    // Only load model if user has selected one
+    if (currentModelPath && hasUserSelectedRock) {
         loadModel(currentModelPath);
     }
 }
@@ -941,15 +970,9 @@ async function startAR() {
             stopCamera();
         }
         
-        const arControls = document.getElementById('ar-controls');
         const zoomControls = document.getElementById('zoom-controls');
-        const resetScale = document.getElementById('reset-scale');
         
-        if (arControls) arControls.classList.add('active');
         if (zoomControls) zoomControls.classList.add('active');
-        if (resetScale) resetScale.classList.add('active');
-        
-        setTimeout(showRotationHint, 1000);
         
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
@@ -959,7 +982,8 @@ async function startAR() {
             currentModel = null;
         }
         
-        if (currentModelPath) {
+        // Only place model if user has selected one
+        if (currentModelPath && hasUserSelectedRock) {
             setTimeout(() => placeModelInFrontOfCamera(), 500);
         }
     } catch (err) {
@@ -992,19 +1016,13 @@ function loadGLB(path, callback) {
 function resetToNormalMode() {
     const arIndicator = document.getElementById('ar-indicator');
     const cameraIndicator = document.getElementById('camera-indicator');
-    const arControls = document.getElementById('ar-controls');
     const zoomControls = document.getElementById('zoom-controls');
-    const resetScale = document.getElementById('reset-scale');
     const scaleIndicator = document.getElementById('scale-indicator');
-    const rotationHint = document.getElementById('rotation-hint');
     
     if (arIndicator) arIndicator.classList.remove('active');
     if (cameraIndicator) cameraIndicator.classList.remove('active');
-    if (arControls) arControls.classList.remove('active');
     if (zoomControls) zoomControls.classList.remove('active');
-    if (resetScale) resetScale.classList.remove('active');
     if (scaleIndicator) scaleIndicator.classList.remove('visible');
-    if (rotationHint) rotationHint.classList.remove('visible');
     
     if (currentARModel) {
         scene.remove(currentARModel);
@@ -1021,14 +1039,17 @@ function resetToNormalMode() {
     originalSize = null;
     
     camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
-    if (currentModelPath) loadModel(currentModelPath);
+    
+    // Only load model if user has selected one
+    if (currentModelPath && hasUserSelectedRock) {
+        loadModel(currentModelPath);
+    }
     controls.reset();
 }
 
 function setupZoomControls() {
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
-    const resetBtn = document.getElementById('reset-scale');
     
     zoomInBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1038,11 +1059,6 @@ function setupZoomControls() {
     zoomOutBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         zoomOut();
-    });
-    
-    resetBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        resetZoom();
     });
 }
 
@@ -1055,11 +1071,6 @@ function zoomIn() {
 function zoomOut() {
     targetScale *= (1 / ZOOM_STEP);
     clampTargetScale();
-    showScaleIndicator();
-}
-
-function resetZoom() {
-    targetScale = 1.0;
     showScaleIndicator();
 }
 
@@ -1109,7 +1120,6 @@ function handleTouchStart(e) {
         previousTouchPosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         rotationVelocity = { x: 0, y: 0 };
         e.preventDefault();
-        showRotationHint();
     } else if (e.touches.length === 2) {
         isPinching = true;
         isRotating = false;
@@ -1178,14 +1188,6 @@ function handleTouchEnd(e) {
 
 function getDistance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-}
-
-function showRotationHint() {
-    const hint = document.getElementById('rotation-hint');
-    if (!hint) return;
-    hint.classList.add('visible');
-    clearTimeout(window.rotationHintTimeout);
-    window.rotationHintTimeout = setTimeout(() => hint.classList.remove('visible'), 3000);
 }
 
 function placeModelInFrontOfCamera() {
@@ -1280,6 +1282,12 @@ function generateTable() {
 function selectRock(type) {
     const data = rocksData[type];
     if (!data) return;
+
+    // Mark that user has selected a rock
+    hasUserSelectedRock = true;
+    
+    // Show clear screen button
+    document.getElementById('clear-screen').classList.add('active');
 
     document.getElementById('rock-name').textContent = data.name;
     document.getElementById('rock-thai').textContent = data.thai;
@@ -1459,4 +1467,5 @@ init();
 </script>
 
 </body>
-</html>
+</html>'''
+

@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+html_code = '''<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -147,6 +148,38 @@
             box-shadow: 0 0 15px rgba(0, 128, 255, 0.6), inset 0 0 10px rgba(255,255,255,0.2);
         }
         
+        /* Reset Button - Red/Orange Gradient */
+        .reset-button {
+            background: linear-gradient(135deg, #ff4d4d 0%, #ff6b35 50%, #ff4d4d 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 6px 12px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(255, 77, 77, 0.35), 0 0 0 1px rgba(255,255,255,0.3) inset;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: auto;
+        }
+        
+        .reset-button:hover {
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.5);
+        }
+        
+        .reset-button:active {
+            transform: translateY(0) scale(0.97);
+        }
+        
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -251,30 +284,7 @@
             .gray-board { padding: 4px; border-radius: 8px; }
             .ar-button { padding: 5px 10px; font-size: 9px; }
             .camera-button { padding: 5px 10px; font-size: 9px; }
-        }
-
-        .ar-controls {
-            position: fixed;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            display: none;
-            pointer-events: none;
-        }
-
-        .ar-controls.active {
-            display: block;
-        }
-
-        .scale-hint {
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            backdrop-filter: blur(4px);
-            white-space: nowrap;
+            .reset-button { padding: 5px 10px; font-size: 9px; }
         }
 
         .zoom-controls {
@@ -321,34 +331,6 @@
             cursor: not-allowed;
         }
 
-        .reset-scale-btn {
-            position: fixed;
-            bottom: 120px;
-            right: 10px;
-            z-index: 100;
-            display: none;
-            pointer-events: auto;
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            color: #333;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            backdrop-filter: blur(4px);
-            transition: all 0.2s;
-        }
-
-        .reset-scale-btn.active {
-            display: block;
-        }
-
-        .reset-scale-btn:active {
-            transform: scale(0.95);
-        }
-
         .scale-indicator {
             position: fixed;
             bottom: 80px;
@@ -367,29 +349,6 @@
         }
 
         .scale-indicator.visible {
-            opacity: 1;
-        }
-
-        .rotation-hint {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 100;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .rotation-hint.visible {
             opacity: 1;
         }
 
@@ -454,25 +413,12 @@
     </div>
 </div>
 
-<div id="ar-controls" class="ar-controls">
-    <div class="scale-hint">ใช้ 2 นิ้วเพื่อซูม</div>
-</div>
-
 <div id="zoom-controls" class="zoom-controls">
     <button id="zoom-in" class="zoom-btn" title="ซูมเข้า">+</button>
     <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
 
-<button id="reset-scale" class="reset-scale-btn" title="รีเซ็ตขนาด">
-    ↺ รีเซ็ต
-</button>
-
 <div id="scale-indicator" class="scale-indicator">100%</div>
-
-<div id="rotation-hint" class="rotation-hint">
-    <span>👆</span>
-    <span>ลากเพื่อหมุน</span>
-</div>
 
 <div class="absolute inset-0 pointer-events-none flex flex-col justify-between z-10">
     <div class="pointer-events-auto p-2 flex justify-between items-center bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm">
@@ -492,6 +438,10 @@
             <button id="arBtn" class="ar-button">
                 <span>🥽</span>
                 <span>AR</span>
+            </button>
+            <button id="resetBtn" class="reset-button">
+                <span>↺</span>
+                <span>รีเซ็ต</span>
             </button>
         </div>
     </div>
@@ -615,6 +565,10 @@ const IDEAL_MODEL_HEIGHT = 1.5;
 let originalCenter = null;
 let originalSize = null;
 
+// Normal mode zoom variables
+let normalModeScale = 1.0;
+let normalModeTargetScale = 1.0;
+
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -627,12 +581,10 @@ function init() {
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    // ปิดเงา (shadow)
     renderer.shadowMap.enabled = false;
     renderer.setClearColor(0x000000, 0);
     renderer.xr.enabled = true;
     
-    // ปรับแต่งแสงและสี
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 10;
@@ -647,14 +599,11 @@ function init() {
     controls.enablePan = false;
     controls.maxPolarAngle = Math.PI / 1.5;
 
-    // AmbientLight
     scene.add(new THREE.AmbientLight(0xffffff, 1.4));
     
-    // HemisphereLight
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.1);
     scene.add(hemiLight);
     
-    // DirectionalLight ไม่มีเงาแล้ว
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(5, 10, 7);
     scene.add(dirLight);
@@ -684,11 +633,13 @@ function init() {
     
     document.getElementById('arBtn').addEventListener('click', toggleAR);
     document.getElementById('cameraBtn').addEventListener('click', toggleCamera);
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
     
     videoElement = document.getElementById('camera-feed');
     
     setupZoomControls();
     setupTouchEvents();
+    setupNormalModeZoom();
     
     renderer.xr.addEventListener('sessionend', () => {
         isARActive = false;
@@ -702,9 +653,76 @@ function init() {
         resetToNormalMode();
     });
     
-    setTimeout(() => selectElement('copper'), 500);
+    // ไม่โหลดโมเดลเริ่มต้น - รอให้ผู้ใช้กดเลือก
     
     animate();
+}
+
+function setupNormalModeZoom() {
+    const canvas = renderer.domElement;
+    canvas.addEventListener('wheel', handleNormalModeWheel, { passive: false });
+}
+
+function handleNormalModeWheel(e) {
+    if (isARActive || isCameraActive) return;
+    if (!currentModel) return;
+    
+    e.preventDefault();
+    
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    normalModeTargetScale *= delta;
+    normalModeTargetScale = Math.max(0.5, Math.min(3.0, normalModeTargetScale));
+    
+    showScaleIndicator();
+}
+
+function resetAll() {
+    if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
+    }
+    
+    if (currentARModel) {
+        scene.remove(currentARModel);
+        currentARModel = null;
+    }
+    
+    if (isCameraActive) {
+        stopCamera();
+    }
+    
+    if (isARActive) {
+        stopAR();
+    }
+    
+    currentModelPath = null;
+    currentScale = 1.0;
+    targetScale = 1.0;
+    normalModeScale = 1.0;
+    normalModeTargetScale = 1.0;
+    baseScale = 0.5;
+    rotationVelocity = { x: 0, y: 0 };
+    isRotating = false;
+    originalCenter = null;
+    originalSize = null;
+    
+    camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
+    controls.reset();
+    
+    isInfoVisible = false;
+    document.getElementById('info-panel').classList.add('hidden-panel');
+    document.getElementById('info-toggle').classList.add('hidden');
+    
+    document.getElementById('element-name').textContent = '';
+    document.getElementById('element-thai').textContent = '';
+    document.getElementById('element-category').textContent = '';
+    document.getElementById('element-desc').textContent = '';
+    document.getElementById('element-details').innerHTML = '';
+    
+    document.getElementById('arBtn').classList.remove('active');
+    document.getElementById('cameraBtn').classList.remove('active');
+    document.getElementById('zoom-controls').classList.remove('active');
+    document.getElementById('scale-indicator').classList.remove('visible');
 }
 
 async function toggleCamera() {
@@ -725,6 +743,7 @@ async function startCamera() {
         document.body.style.backgroundImage = 'none';
         isCameraActive = true;
         document.getElementById('cameraBtn').classList.add('active');
+        document.getElementById('zoom-controls').classList.add('active');
         
         if (isARActive) {
             await stopAR();
@@ -751,8 +770,14 @@ function stopCamera() {
     }
     videoElement.style.display = 'none';
     videoElement.srcObject = null;
+    
+    // กลับไปใช้พื้นหลังเดิม
+    document.body.style.backgroundImage = "url('inmeg/background1.avif')";
+    
     isCameraActive = false;
     document.getElementById('cameraBtn').classList.remove('active');
+    document.getElementById('zoom-controls').classList.remove('active');
+    document.getElementById('scale-indicator').classList.remove('visible');
     
     if (currentModel) {
         scene.remove(currentModel);
@@ -803,7 +828,6 @@ function loadCameraModel(filePath) {
         const optimalDistance = maxDim * scale * 2.5;
         camera.position.z = Math.max(2.5, Math.min(5, optimalDistance));
         
-        // ไม่มีเงาแล้ว
         currentModel.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = false; 
@@ -811,19 +835,6 @@ function loadCameraModel(filePath) {
             }
         });
         scene.add(currentModel);
-        
-        let s = 0;
-        const entry = setInterval(() => {
-            s += 0.1;
-            const currentS = s * scale;
-            currentModel.scale.setScalar(currentS);
-            currentModel.position.copy(center.clone().multiplyScalar(-currentS));
-            currentModel.rotation.y += 0.15;
-            if(s >= 1) {
-                clearInterval(entry);
-                currentModel.rotation.y = 0;
-            }
-        }, 16);
     });
 }
 
@@ -865,20 +876,11 @@ async function startAR() {
         targetScale = 1.0;
         
         document.getElementById('arBtn').classList.add('active');
+        document.getElementById('zoom-controls').classList.add('active');
         
         if (isCameraActive) {
             stopCamera();
         }
-        
-        const arControls = document.getElementById('ar-controls');
-        const zoomControls = document.getElementById('zoom-controls');
-        const resetScale = document.getElementById('reset-scale');
-        
-        if (arControls) arControls.classList.add('active');
-        if (zoomControls) zoomControls.classList.add('active');
-        if (resetScale) resetScale.classList.add('active');
-        
-        setTimeout(showRotationHint, 1000);
         
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
@@ -919,17 +921,9 @@ function loadGLB(path, callback) {
 }
 
 function resetToNormalMode() {
-    const arControls = document.getElementById('ar-controls');
-    const zoomControls = document.getElementById('zoom-controls');
-    const resetScale = document.getElementById('reset-scale');
-    const scaleIndicator = document.getElementById('scale-indicator');
-    const rotationHint = document.getElementById('rotation-hint');
-    
-    if (arControls) arControls.classList.remove('active');
-    if (zoomControls) zoomControls.classList.remove('active');
-    if (resetScale) resetScale.classList.remove('active');
-    if (scaleIndicator) scaleIndicator.classList.remove('visible');
-    if (rotationHint) rotationHint.classList.remove('visible');
+    document.getElementById('arBtn').classList.remove('active');
+    document.getElementById('zoom-controls').classList.remove('active');
+    document.getElementById('scale-indicator').classList.remove('visible');
     
     if (currentARModel) {
         scene.remove(currentARModel);
@@ -953,39 +947,30 @@ function resetToNormalMode() {
 function setupZoomControls() {
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
-    const resetBtn = document.getElementById('reset-scale');
     
     zoomInBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        zoomIn();
+        if (isARActive || isCameraActive) {
+            targetScale *= ZOOM_STEP;
+            clampTargetScale();
+        } else {
+            normalModeTargetScale *= ZOOM_STEP;
+            normalModeTargetScale = Math.max(0.5, Math.min(3.0, normalModeTargetScale));
+        }
+        showScaleIndicator();
     });
     
     zoomOutBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        zoomOut();
+        if (isARActive || isCameraActive) {
+            targetScale *= (1 / ZOOM_STEP);
+            clampTargetScale();
+        } else {
+            normalModeTargetScale *= (1 / ZOOM_STEP);
+            normalModeTargetScale = Math.max(0.5, Math.min(3.0, normalModeTargetScale));
+        }
+        showScaleIndicator();
     });
-    
-    resetBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        resetZoom();
-    });
-}
-
-function zoomIn() {
-    targetScale *= ZOOM_STEP;
-    clampTargetScale();
-    showScaleIndicator();
-}
-
-function zoomOut() {
-    targetScale *= (1 / ZOOM_STEP);
-    clampTargetScale();
-    showScaleIndicator();
-}
-
-function resetZoom() {
-    targetScale = 1.0;
-    showScaleIndicator();
 }
 
 function clampTargetScale() {
@@ -996,7 +981,8 @@ function showScaleIndicator() {
     const indicator = document.getElementById('scale-indicator');
     if (!indicator) return;
     
-    indicator.textContent = `${Math.round(targetScale * 100)}%`;
+    let displayScale = isARActive || isCameraActive ? targetScale : normalModeTargetScale;
+    indicator.textContent = `${Math.round(displayScale * 100)}%`;
     indicator.classList.add('visible');
     
     clearTimeout(window.scaleIndicatorTimeout);
@@ -1010,8 +996,9 @@ function showScaleIndicator() {
 function updateZoomButtonStates() {
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomInBtn = document.getElementById('zoom-in');
-    if (zoomOutBtn) zoomOutBtn.disabled = targetScale <= MIN_SCALE;
-    if (zoomInBtn) zoomInBtn.disabled = targetScale >= MAX_SCALE;
+    let currentS = isARActive || isCameraActive ? targetScale : normalModeTargetScale;
+    if (zoomOutBtn) zoomOutBtn.disabled = currentS <= 0.5;
+    if (zoomInBtn) zoomInBtn.disabled = currentS >= 3.0;
 }
 
 function setupTouchEvents() {
@@ -1034,7 +1021,6 @@ function handleTouchStart(e) {
         previousTouchPosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         rotationVelocity = { x: 0, y: 0 };
         e.preventDefault();
-        showRotationHint();
     } else if (e.touches.length === 2) {
         isPinching = true;
         isRotating = false;
@@ -1105,14 +1091,6 @@ function getDistance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
-function showRotationHint() {
-    const hint = document.getElementById('rotation-hint');
-    if (!hint) return;
-    hint.classList.add('visible');
-    clearTimeout(window.rotationHintTimeout);
-    window.rotationHintTimeout = setTimeout(() => hint.classList.remove('visible'), 3000);
-}
-
 function placeModelInFrontOfCamera() {
     if (!currentModelPath || !isARActive) return;
     if (isLoadingARModel) return;
@@ -1155,7 +1133,6 @@ function placeModelInFrontOfCamera() {
         model.scale.setScalar(baseScale * currentScale);
         model.position.sub(center.multiplyScalar(baseScale * currentScale));
         
-        // ไม่มีเงาแล้ว
         model.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = false; 
@@ -1291,7 +1268,6 @@ function loadModel(filePath) {
         const optimalDistance = maxDim * scale * 2.5;
         camera.position.z = Math.max(2.5, Math.min(5, optimalDistance));
         
-        // ไม่มีเงาแล้ว
         currentModel.traverse(c => { 
             if(c.isMesh) { 
                 c.castShadow = false; 
@@ -1341,6 +1317,14 @@ function render(timestamp, frame) {
 
     controls.update();
     
+    // Normal mode zoom smoothing
+    if (!isARActive && !isCameraActive && currentModel) {
+        if (Math.abs(normalModeScale - normalModeTargetScale) > 0.001) {
+            normalModeScale += (normalModeTargetScale - normalModeScale) * SMOOTH_FACTOR;
+            currentModel.scale.setScalar(normalModeScale);
+        }
+    }
+    
     if (currentARModel && isARActive) {
         const oldScale = currentScale;
         currentScale += (targetScale - currentScale) * SMOOTH_FACTOR;
@@ -1386,4 +1370,6 @@ init();
 </script>
 
 </body>
-</html>
+</html>'''
+
+print(html_code)
