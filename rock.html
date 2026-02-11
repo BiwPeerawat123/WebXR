@@ -1,5 +1,4 @@
-
-html_code = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -75,7 +74,6 @@ html_code = '''<!DOCTYPE html>
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         }
         
-        /* AR Button - Pink Gradient */
         .ar-button {
             background: linear-gradient(135deg, #ff0080 0%, #7928ca 50%, #ff0080 100%);
             background-size: 200% 200%;
@@ -112,7 +110,6 @@ html_code = '''<!DOCTYPE html>
             box-shadow: 0 0 15px rgba(255, 0, 128, 0.6), inset 0 0 10px rgba(255,255,255,0.2);
         }
         
-        /* Camera Button - Blue Gradient */
         .camera-button {
             background: linear-gradient(135deg, #0080ff 0%, #7928ca 50%, #0080ff 100%);
             background-size: 200% 200%;
@@ -255,16 +252,6 @@ html_code = '''<!DOCTYPE html>
             .camera-button { padding: 5px 10px; font-size: 9px; }
         }
 
-        /* REMOVED: .ar-controls - no longer visible but functionality kept */
-        .ar-controls {
-            display: none !important;
-        }
-
-        /* REMOVED: .scale-hint - no longer visible but functionality kept */
-        .scale-hint {
-            display: none !important;
-        }
-
         .zoom-controls {
             position: fixed;
             right: 10px;
@@ -307,11 +294,6 @@ html_code = '''<!DOCTYPE html>
         .zoom-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
-        }
-
-        /* REMOVED: .reset-scale-btn - old reset button removed */
-        .reset-scale-btn {
-            display: none !important;
         }
 
         .ar-mode-indicator {
@@ -384,11 +366,6 @@ html_code = '''<!DOCTYPE html>
             opacity: 1;
         }
 
-        /* REMOVED: .rotation-hint - no longer visible but functionality kept */
-        .rotation-hint {
-            display: none !important;
-        }
-
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -427,7 +404,6 @@ html_code = '''<!DOCTYPE html>
             margin: 0 auto 10px;
         }
 
-        /* New Clear Screen Button */
         .clear-screen-btn {
             position: fixed;
             bottom: 120px;
@@ -495,30 +471,13 @@ html_code = '''<!DOCTYPE html>
     <span>Camera Mode</span>
 </div>
 
-<!-- REMOVED from view: ar-controls (ใช้ 2 นิ้วเพื่อซูม) - functionality kept in JS -->
-<div id="ar-controls" class="ar-controls">
-    <div class="scale-hint">ใช้ 2 นิ้วเพื่อซูม</div>
-</div>
-
 <div id="zoom-controls" class="zoom-controls">
     <button id="zoom-in" class="zoom-btn" title="ซูมเข้า">+</button>
     <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
 
-<!-- REMOVED from view: reset-scale (↺ รีเซ็ต) - replaced with clear-screen -->
-<button id="reset-scale" class="reset-scale-btn" title="รีเซ็ตขนาด">
-    ↺ รีเซ็ต
-</button>
-
 <div id="scale-indicator" class="scale-indicator">100%</div>
 
-<!-- REMOVED from view: rotation-hint (👆 ลากเพื่อหมุน) - functionality kept in JS -->
-<div id="rotation-hint" class="rotation-hint">
-    <span>👆</span>
-    <span>ลากเพื่อหมุน</span>
-</div>
-
-<!-- New Clear Screen Button -->
 <button id="clear-screen" class="clear-screen-btn" title="ล้างหน้าจอ">
     <span>🗑️</span>
     <span>ล้างหน้าจอ</span>
@@ -633,7 +592,7 @@ const rocksData = {
 let camera, scene, renderer, controls, loader;
 let currentModel = null;
 let isInfoVisible = false;
-let hasUserSelectedRock = false; // Track if user has selected any rock
+let hasUserSelectedRock = false;
 
 let controller;
 let reticle;
@@ -763,39 +722,29 @@ function init() {
         resetToNormalMode();
     });
     
-    // REMOVED: Don't auto-select rock on init - wait for user click
-    // setTimeout(() => selectRock('basalt'), 500);
-    
     animate();
 }
 
-// New function to clear screen
 function clearScreen() {
-    // Remove current model from scene
     if (currentModel) {
         scene.remove(currentModel);
         currentModel = null;
     }
     
-    // Remove AR model if exists
     if (currentARModel) {
         scene.remove(currentARModel);
         currentARModel = null;
     }
     
-    // Reset state
     currentModelPath = null;
     hasUserSelectedRock = false;
     
-    // Hide info panel
     isInfoVisible = false;
     document.getElementById('info-panel').classList.add('hidden-panel');
     document.getElementById('info-toggle').classList.add('hidden');
     
-    // Hide clear screen button
     document.getElementById('clear-screen').classList.remove('active');
     
-    // Reset camera position
     camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
     controls.reset();
 }
@@ -829,7 +778,6 @@ async function startCamera() {
             currentModel = null;
         }
         
-        // Only load model if user has selected one
         if (currentModelPath && hasUserSelectedRock) {
             loadCameraModel(currentModelPath);
         }
@@ -850,7 +798,6 @@ function stopCamera() {
     document.getElementById('cameraBtn').classList.remove('active');
     document.getElementById('camera-indicator').classList.remove('active');
     
-    // FIX: Restore original background image when stopping camera
     document.body.style.backgroundImage = "url('models/background.jpg')";
     
     if (currentModel) {
@@ -858,7 +805,6 @@ function stopCamera() {
         currentModel = null;
     }
     
-    // Only load model if user has selected one
     if (currentModelPath && hasUserSelectedRock) {
         loadModel(currentModelPath);
     }
@@ -982,7 +928,6 @@ async function startAR() {
             currentModel = null;
         }
         
-        // Only place model if user has selected one
         if (currentModelPath && hasUserSelectedRock) {
             setTimeout(() => placeModelInFrontOfCamera(), 500);
         }
@@ -1040,7 +985,6 @@ function resetToNormalMode() {
     
     camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
     
-    // Only load model if user has selected one
     if (currentModelPath && hasUserSelectedRock) {
         loadModel(currentModelPath);
     }
@@ -1283,10 +1227,8 @@ function selectRock(type) {
     const data = rocksData[type];
     if (!data) return;
 
-    // Mark that user has selected a rock
     hasUserSelectedRock = true;
     
-    // Show clear screen button
     document.getElementById('clear-screen').classList.add('active');
 
     document.getElementById('rock-name').textContent = data.name;
@@ -1467,5 +1409,4 @@ init();
 </script>
 
 </body>
-</html>'''
-
+</html>
