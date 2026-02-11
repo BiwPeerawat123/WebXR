@@ -18,7 +18,8 @@
         }
 
         .sidebar {
-            width: 200px;
+            width: 150px;
+              padding-left: 30px; 
             background-color: #2c3e50;
             padding: 20px;
             display: flex;
@@ -26,12 +27,13 @@
             gap: 15px;
             z-index: 10;
             transition: transform 0.3s ease;
-            height: 100vh;
+            padding-top: 80px; 
         }
 
         .sidebar button {
             width: 100%;
-            padding: 15px;
+           
+            padding: 10px;
             font-size: 16px;
             border: none;
             border-radius: 8px;
@@ -377,7 +379,7 @@
     <button class="menu-toggle" id="menuToggle" style="display: none;">☰ เมนู</button>
 
     <div class="sidebar" id="sidebar">
-        <button id="periodicBtn" onclick="loadPage('element.html', 'periodic')">ตารางธาตุ</button>
+        <button id="periodicBtn" onclick="loadPage('element.html', 'periodic')">ธาตุมีค่า</button>
         <button id="solarBtn" onclick="loadPage('solar.html', 'solar')">ระบบสุริยะ</button>
         <button id="rockBtn" onclick="loadPage('rock.html', 'horm')">หิน</button>
         
@@ -460,7 +462,10 @@
             { name: "เพลงที่ 2", src: "2.mp3" },
             { name: "เพลงที่ 3", src: "3.mp3" },
             { name: "เพลงที่ 4", src: "4.mp3" },
-            { name: "เพลงบรรยายระบบสุริยะ", src: "5.mp3" }
+            { name: "เพลงบรรยายระบบสุริยะ", src: "5.mp3" },
+            { name: "เพลงThe rock", src: "7.mp3" },
+            { name: "เพลงข้ารับใช้ปีศาจ", src: "8.mp3" },
+
         ];
         
         let currentTrackIndex = 0;
