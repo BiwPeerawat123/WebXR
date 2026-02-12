@@ -147,7 +147,6 @@
             box-shadow: 0 0 15px rgba(0, 128, 255, 0.6), inset 0 0 10px rgba(255,255,255,0.2);
         }
         
-        /* Reset Button - Red/Orange Gradient */
         .reset-button {
             background: linear-gradient(135deg, #ff4d4d 0%, #ff6b35 50%, #ff4d4d 100%);
             background-size: 200% 200%;
@@ -413,8 +412,8 @@
 </div>
 
 <div id="zoom-controls" class="zoom-controls">
-    <button id="zoom-in" class="zoom-btn" title="ซูมเข้า">+</button>
-    <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
+    <button id="zoom-in" class="zoom-btn">+</button>
+    <button id="zoom-out" class="zoom-btn">−</button>
 </div>
 
 <div id="scale-indicator" class="scale-indicator">100%</div>
@@ -452,9 +451,7 @@
                     <h2 id="element-name" class="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 leading-none"></h2>
                     <h3 id="element-thai" class="text-[10px] font-medium text-slate-700 mt-0.5"></h3>
                 </div>
-                <button onclick="toggleInfo()" class="close-btn" title="ปิด">
-                    ✕
-                </button>
+                <button onclick="toggleInfo()" class="close-btn">✕</button>
             </div>
             <div id="element-category" class="inline-block px-1.5 py-0.5 rounded-full text-[8px] mb-1 font-medium text-white shadow-sm"></div>
             
@@ -468,9 +465,7 @@
     </div>
     
     <div id="info-toggle" class="fixed top-12 right-2 z-20 pointer-events-auto hidden">
-        <button onclick="toggleInfo()" class="info-toggle-btn" title="แสดงข้อมูล">
-            ℹ️
-        </button>
+        <button onclick="toggleInfo()" class="info-toggle-btn">ℹ️</button>
     </div>
 
     <div class="pointer-events-auto p-1.5" style="margin-bottom: 10vh;">
@@ -558,13 +553,12 @@ let isLoadingARModel = false;
 const modelCache = {};
 
 const NORMAL_MODE_DISTANCE = 3.5;
-const AR_MODE_DISTANCE = 1.2;
+const AR_MODE_DISTANCE = 2.5;
 const IDEAL_MODEL_HEIGHT = 1.5;
 
 let originalCenter = null;
 let originalSize = null;
 
-// Normal mode zoom variables
 let normalModeScale = 1.0;
 let normalModeTargetScale = 1.0;
 
@@ -651,8 +645,6 @@ function init() {
         document.getElementById('arBtn').classList.remove('active');
         resetToNormalMode();
     });
-    
-    // ไม่โหลดโมเดลเริ่มต้น - รอให้ผู้ใช้กดเลือก
     
     animate();
 }
@@ -770,7 +762,6 @@ function stopCamera() {
     videoElement.style.display = 'none';
     videoElement.srcObject = null;
     
-    // กลับไปใช้พื้นหลังเดิม
     document.body.style.backgroundImage = "url('inmeg/background1.avif')";
     
     isCameraActive = false;
@@ -949,10 +940,10 @@ function setupZoomControls() {
     
     zoomInBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (isARActive || isCameraActive) {
+        if (isARActive) {
             targetScale *= ZOOM_STEP;
             clampTargetScale();
-        } else {
+        } else if (isCameraActive) {
             normalModeTargetScale *= ZOOM_STEP;
             normalModeTargetScale = Math.max(0.5, Math.min(3.0, normalModeTargetScale));
         }
@@ -961,10 +952,10 @@ function setupZoomControls() {
     
     zoomOutBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (isARActive || isCameraActive) {
+        if (isARActive) {
             targetScale *= (1 / ZOOM_STEP);
             clampTargetScale();
-        } else {
+        } else if (isCameraActive) {
             normalModeTargetScale *= (1 / ZOOM_STEP);
             normalModeTargetScale = Math.max(0.5, Math.min(3.0, normalModeTargetScale));
         }
@@ -980,7 +971,7 @@ function showScaleIndicator() {
     const indicator = document.getElementById('scale-indicator');
     if (!indicator) return;
     
-    let displayScale = isARActive || isCameraActive ? targetScale : normalModeTargetScale;
+    let displayScale = isARActive ? targetScale : normalModeTargetScale;
     indicator.textContent = `${Math.round(displayScale * 100)}%`;
     indicator.classList.add('visible');
     
@@ -995,7 +986,7 @@ function showScaleIndicator() {
 function updateZoomButtonStates() {
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomInBtn = document.getElementById('zoom-in');
-    let currentS = isARActive || isCameraActive ? targetScale : normalModeTargetScale;
+    let currentS = isARActive ? targetScale : normalModeTargetScale;
     if (zoomOutBtn) zoomOutBtn.disabled = currentS <= 0.5;
     if (zoomInBtn) zoomInBtn.disabled = currentS >= 3.0;
 }
@@ -1316,7 +1307,6 @@ function render(timestamp, frame) {
 
     controls.update();
     
-    // Normal mode zoom smoothing
     if (!isARActive && !isCameraActive && currentModel) {
         if (Math.abs(normalModeScale - normalModeTargetScale) > 0.001) {
             normalModeScale += (normalModeTargetScale - normalModeScale) * SMOOTH_FACTOR;

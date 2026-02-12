@@ -146,6 +146,38 @@
             box-shadow: 0 0 15px rgba(0, 128, 255, 0.6), inset 0 0 10px rgba(255,255,255,0.2);
         }
         
+        /* ปุ่มรีเซทแบบใหม่ - สไตล์เดียวกับปุ่ม Camera และ AR */
+        .reset-button {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff6b35 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 6px 12px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(255, 107, 53, 0.35), 0 0 0 1px rgba(255,255,255,0.3) inset;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: auto;
+        }
+        
+        .reset-button:hover {
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.5);
+        }
+        
+        .reset-button:active {
+            transform: translateY(0) scale(0.97);
+        }
+        
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -250,6 +282,7 @@
             .gray-board { padding: 4px; border-radius: 8px; }
             .ar-button { padding: 5px 10px; font-size: 9px; }
             .camera-button { padding: 5px 10px; font-size: 9px; }
+            .reset-button { padding: 5px 10px; font-size: 9px; }
         }
 
         .zoom-controls {
@@ -404,38 +437,70 @@
             margin: 0 auto 10px;
         }
 
+        /* ซ่อนปุ่มรีเซทเก่าด้านล่าง */
         .clear-screen-btn {
-            position: fixed;
-            bottom: 120px;
-            right: 10px;
-            z-index: 100;
-            display: none;
-            pointer-events: auto;
-            background: linear-gradient(135deg, #ff4444, #cc0000);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 10px 16px;
-            border-radius: 25px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
-            backdrop-filter: blur(4px);
-            transition: all 0.2s;
-            align-items: center;
-            gap: 6px;
+            display: none !important;
         }
 
-        .clear-screen-btn.active {
+        /* ปุ่มปรับระยะห่างโมเดลใน AR */
+        .distance-controls {
+            position: fixed;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .distance-controls.active {
             display: flex;
         }
 
-        .clear-screen-btn:active {
-            transform: scale(0.95);
+        .distance-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
         }
 
-        .clear-screen-btn:hover {
-            box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+        .distance-btn:active {
+            transform: scale(0.9);
+            background: #f0f0f0;
+        }
+
+        .distance-indicator {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .distance-indicator.visible {
+            opacity: 1;
         }
     </style>
 
@@ -476,8 +541,16 @@
     <button id="zoom-out" class="zoom-btn" title="ซูมออก">−</button>
 </div>
 
-<div id="scale-indicator" class="scale-indicator">100%</div>
+<!-- ปุ่มควบคุมระยะห่างโมเดลใน AR -->
+<div id="distance-controls" class="distance-controls">
+    <button id="distance-far" class="distance-btn" title="ไกลขึ้น">↔️</button>
+    <button id="distance-near" class="distance-btn" title="ใกล้ขึ้น">↔</button>
+</div>
 
+<div id="scale-indicator" class="scale-indicator">100%</div>
+<div id="distance-indicator" class="distance-indicator">1.5m</div>
+
+<!-- ปุ่มรีเซทเก่า (ซ่อนไว้) -->
 <button id="clear-screen" class="clear-screen-btn" title="ล้างหน้าจอ">
     <span>🗑️</span>
     <span>ล้างหน้าจอ</span>
@@ -501,6 +574,11 @@
             <button id="arBtn" class="ar-button">
                 <span>🥽</span>
                 <span>AR</span>
+            </button>
+            <!-- ปุ่มรีเซทใหม่ -->
+            <button id="resetBtn" class="reset-button">
+                <span>↺</span>
+                <span>รีเซ็ต</span>
             </button>
         </div>
     </div>
@@ -609,10 +687,17 @@ let currentARModel = null;
 let baseScale = 0.5;
 let currentScale = 1.0;
 let targetScale = 1.0;
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 3.0;
-const ZOOM_STEP = 1.25;
-const SMOOTH_FACTOR = 0.15;
+const MIN_SCALE = 0.3;
+const MAX_SCALE = 5.0;
+const ZOOM_STEP = 1.2;
+const SMOOTH_FACTOR = 0.12;
+
+// ตัวแปรควบคุมระยะห่างโมเดลใน AR
+let currentARDistance = 1.5; // เริ่มต้นที่ 1.5 เมตร
+let targetARDistance = 1.5;
+const MIN_AR_DISTANCE = 0.8; // ใกล้สุด 0.8 เมตร
+const MAX_AR_DISTANCE = 3.0; // ไกลสุด 3.0 เมตร
+const DISTANCE_STEP = 0.3;
 
 let initialPinchDistance = 0;
 let initialPinchScale = 1.0;
@@ -629,8 +714,6 @@ let isLoadingARModel = false;
 const modelCache = {};
 
 const NORMAL_MODE_DISTANCE = 3.5;
-const AR_MODE_DISTANCE = 1.2;
-const IDEAL_MODEL_HEIGHT = 1.5;
 
 let originalCenter = null;
 let originalSize = null;
@@ -704,10 +787,12 @@ function init() {
     document.getElementById('arBtn').addEventListener('click', toggleAR);
     document.getElementById('cameraBtn').addEventListener('click', toggleCamera);
     document.getElementById('clear-screen').addEventListener('click', clearScreen);
+    document.getElementById('resetBtn').addEventListener('click', clearScreen); // เพิ่ม event listener สำหรับปุ่มรีเซทใหม่
     
     videoElement = document.getElementById('camera-feed');
     
     setupZoomControls();
+    setupDistanceControls(); // เพิ่มการตั้งค่าปุ่มระยะห่าง
     setupTouchEvents();
     
     renderer.xr.addEventListener('sessionend', () => {
@@ -723,6 +808,60 @@ function init() {
     });
     
     animate();
+}
+
+// เพิ่มฟังก์ชันควบคุมระยะห่างโมเดลใน AR
+function setupDistanceControls() {
+    const distanceFarBtn = document.getElementById('distance-far');
+    const distanceNearBtn = document.getElementById('distance-near');
+    
+    distanceFarBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        increaseDistance();
+    });
+    
+    distanceNearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        decreaseDistance();
+    });
+}
+
+function increaseDistance() {
+    targetARDistance += DISTANCE_STEP;
+    clampTargetDistance();
+    showDistanceIndicator();
+}
+
+function decreaseDistance() {
+    targetARDistance -= DISTANCE_STEP;
+    clampTargetDistance();
+    showDistanceIndicator();
+}
+
+function clampTargetDistance() {
+    targetARDistance = Math.max(MIN_AR_DISTANCE, Math.min(MAX_AR_DISTANCE, targetARDistance));
+}
+
+function showDistanceIndicator() {
+    const indicator = document.getElementById('distance-indicator');
+    if (!indicator) return;
+    
+    indicator.textContent = `${targetARDistance.toFixed(1)}m`;
+    indicator.classList.add('visible');
+    
+    clearTimeout(window.distanceIndicatorTimeout);
+    window.distanceIndicatorTimeout = setTimeout(() => {
+        indicator.classList.remove('visible');
+    }, 1500);
+    
+    updateDistanceButtonStates();
+}
+
+function updateDistanceButtonStates() {
+    const farBtn = document.getElementById('distance-far');
+    const nearBtn = document.getElementById('distance-near');
+    if (farBtn) farBtn.disabled = targetARDistance >= MAX_AR_DISTANCE;
+    if (nearBtn) nearBtn.disabled = targetARDistance <= MIN_AR_DISTANCE;
 }
 
 function clearScreen() {
@@ -743,7 +882,11 @@ function clearScreen() {
     document.getElementById('info-panel').classList.add('hidden-panel');
     document.getElementById('info-toggle').classList.add('hidden');
     
-    document.getElementById('clear-screen').classList.remove('active');
+    // รีเซ็ตระยะห่างและสเกลใน AR
+    currentARDistance = 1.5;
+    targetARDistance = 1.5;
+    currentScale = 1.0;
+    targetScale = 1.0;
     
     camera.position.set(0, 0, NORMAL_MODE_DISTANCE);
     controls.reset();
@@ -908,6 +1051,8 @@ async function startAR() {
         isARActive = true;
         currentScale = 1.0;
         targetScale = 1.0;
+        currentARDistance = 1.5; // รีเซ็ตระยะห่างเริ่มต้น
+        targetARDistance = 1.5;
         
         document.getElementById('arBtn').classList.add('active');
         document.getElementById('ar-indicator').classList.add('active');
@@ -917,8 +1062,10 @@ async function startAR() {
         }
         
         const zoomControls = document.getElementById('zoom-controls');
+        const distanceControls = document.getElementById('distance-controls');
         
         if (zoomControls) zoomControls.classList.add('active');
+        if (distanceControls) distanceControls.classList.add('active'); // แสดงปุ่มควบคุมระยะห่าง
         
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(session);
@@ -962,20 +1109,27 @@ function resetToNormalMode() {
     const arIndicator = document.getElementById('ar-indicator');
     const cameraIndicator = document.getElementById('camera-indicator');
     const zoomControls = document.getElementById('zoom-controls');
+    const distanceControls = document.getElementById('distance-controls');
     const scaleIndicator = document.getElementById('scale-indicator');
+    const distanceIndicator = document.getElementById('distance-indicator');
     
     if (arIndicator) arIndicator.classList.remove('active');
     if (cameraIndicator) cameraIndicator.classList.remove('active');
     if (zoomControls) zoomControls.classList.remove('active');
+    if (distanceControls) distanceControls.classList.remove('active');
     if (scaleIndicator) scaleIndicator.classList.remove('visible');
+    if (distanceIndicator) distanceIndicator.classList.remove('visible');
     
     if (currentARModel) {
         scene.remove(currentARModel);
         currentARModel = null;
     }
     
+    // รีเซ็ตค่า AR
     currentScale = 1.0;
     targetScale = 1.0;
+    currentARDistance = 1.5;
+    targetARDistance = 1.5;
     baseScale = 0.5;
     rotationVelocity = { x: 0, y: 0 };
     isRotating = false;
@@ -1159,22 +1313,14 @@ function placeModelInFrontOfCamera() {
         originalCenter = center.clone();
         originalSize = size.clone();
         
-        baseScale = IDEAL_MODEL_HEIGHT / maxDim;
+        // คำนวณสเกลพื้นฐานให้เหมาะสมกับระยะห่างปัจจุบัน
+        const targetHeight = 0.8; // ความสูงเป้าหมายที่ระยะ 1.5m
+        baseScale = targetHeight / maxDim;
+        
         currentScale = 1.0;
         targetScale = 1.0;
         
-        const cameraPosition = new THREE.Vector3();
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldPosition(cameraPosition);
-        camera.getWorldDirection(cameraDirection);
-        
-        const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(AR_MODE_DISTANCE));
-        targetPosition.y = cameraPosition.y - 0.2;
-        
-        model.position.copy(targetPosition);
-        model.rotation.set(0, 0, 0);
-        model.scale.setScalar(baseScale * currentScale);
-        model.position.sub(center.multiplyScalar(baseScale * currentScale));
+        updateARModelPosition(model);
         
         model.traverse(c => { 
             if(c.isMesh) { 
@@ -1187,21 +1333,49 @@ function placeModelInFrontOfCamera() {
         currentARModel = model;
         scene.add(model);
         
+        // Animation entry
         let s = 0;
         const entry = setInterval(() => {
             s += 0.08;
             const currentS = s * baseScale * currentScale;
             model.scale.setScalar(currentS);
-            model.position.copy(targetPosition).sub(center.clone().multiplyScalar(currentS));
+            
+            const cameraPosition = new THREE.Vector3();
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldPosition(cameraPosition);
+            camera.getWorldDirection(cameraDirection);
+            
+            const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(currentARDistance));
+            targetPosition.y = cameraPosition.y - 0.2;
+            
+            model.position.copy(targetPosition).sub(originalCenter.clone().multiplyScalar(currentS));
             
             if(s >= 1) {
                 clearInterval(entry);
                 updateZoomButtonStates();
+                updateDistanceButtonStates();
             }
         }, 30);
         
         isLoadingARModel = false;
     });
+}
+
+// ฟังก์ชันอัพเดทตำแหน่งโมเดลตามระยะห่างปัจจุบัน
+function updateARModelPosition(model) {
+    if (!model || !originalCenter) return;
+    
+    const cameraPosition = new THREE.Vector3();
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldPosition(cameraPosition);
+    camera.getWorldDirection(cameraDirection);
+    
+    const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(currentARDistance));
+    targetPosition.y = cameraPosition.y - 0.2;
+    
+    const finalScale = baseScale * currentScale;
+    model.scale.setScalar(finalScale);
+    model.position.copy(targetPosition).sub(originalCenter.clone().multiplyScalar(finalScale));
 }
 
 function generateTable() {
@@ -1228,8 +1402,6 @@ function selectRock(type) {
     if (!data) return;
 
     hasUserSelectedRock = true;
-    
-    document.getElementById('clear-screen').classList.add('active');
 
     document.getElementById('rock-name').textContent = data.name;
     document.getElementById('rock-thai').textContent = data.thai;
@@ -1365,26 +1537,20 @@ function render(timestamp, frame) {
     controls.update();
     
     if (currentARModel && isARActive) {
+        // Smooth zoom transition
         const oldScale = currentScale;
         currentScale += (targetScale - currentScale) * SMOOTH_FACTOR;
         
-        if (Math.abs(currentScale - oldScale) > 0.001) {
-            const finalScale = baseScale * currentScale;
-            currentARModel.scale.setScalar(finalScale);
-            
-            if (originalCenter) {
-                const cameraPosition = new THREE.Vector3();
-                const cameraDirection = new THREE.Vector3();
-                camera.getWorldPosition(cameraPosition);
-                camera.getWorldDirection(cameraDirection);
-                
-                const targetPosition = cameraPosition.clone().add(cameraDirection.multiplyScalar(AR_MODE_DISTANCE));
-                targetPosition.y = cameraPosition.y - 0.2;
-                
-                currentARModel.position.copy(targetPosition).sub(originalCenter.clone().multiplyScalar(finalScale));
-            }
+        // Smooth distance transition
+        const oldDistance = currentARDistance;
+        currentARDistance += (targetARDistance - currentARDistance) * SMOOTH_FACTOR;
+        
+        // อัพเดทตำแหน่งถ้าสเกลหรือระยะห่างเปลี่ยน
+        if (Math.abs(currentScale - oldScale) > 0.001 || Math.abs(currentARDistance - oldDistance) > 0.001) {
+            updateARModelPosition(currentARModel);
         }
         
+        // Momentum rotation when not touching
         if (!isRotating) {
             currentARModel.rotation.y += rotationVelocity.y;
             currentARModel.rotation.x += rotationVelocity.x;
